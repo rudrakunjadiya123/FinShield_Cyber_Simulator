@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
@@ -8,24 +8,35 @@ const CampaignDetailPage = () => {
   const [campaign, setCampaign] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [campRes, statsRes] = await Promise.all([
-          api.get(`/campaigns/${id}`),
-          api.get(`/campaigns/${id}/stats`)
-        ]);
-        setCampaign(campRes.data);
-        setStats(statsRes.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+  const fetchData = useCallback(async (showLoading = false) => {
+    if (showLoading) setLoading(true);
+    try {
+      const [campRes, statsRes] = await Promise.all([
+        api.get(`/campaigns/${id}`),
+        api.get(`/campaigns/${id}/stats`)
+      ]);
+      setCampaign(campRes.data);
+      setStats(statsRes.data);
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
+
+  // Initial load
+  useEffect(() => {
+    fetchData(true);
+  }, [fetchData]);
+
+  // Auto-refresh every 5 seconds for all campaigns
+  useEffect(() => {
+    const interval = setInterval(() => fetchData(false), 5000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   if (loading) return <div className="flex items-center justify-center h-64"><p>Loading...</p></div>;
   if (!campaign) return <div className="text-center py-8">Campaign not found</div>;
@@ -42,7 +53,32 @@ const CampaignDetailPage = () => {
             <p className="text-slate-500">Departments: {campaign.target_departments?.join(', ')}</p>
             <p className="text-slate-500">Launch: {new Date(campaign.launch_date).toLocaleString()}</p>
           </div>
-          <StatusBadge status={campaign.status} />
+          <div className="text-right">
+            <StatusBadge status={campaign.status} />
+            {campaign.status === 'running' && (
+              <p className="text-xs text-green-600 mt-2 flex items-center justify-end gap-1">
+                <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                Live - Refreshing every 5s
+              </p>
+            )}
+            {campaign.status !== 'running' && (
+              <p className="text-xs text-blue-600 mt-2 flex items-center justify-end gap-1">
+                <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                Auto-refreshing every 5s
+              </p>
+            )}
+            {lastUpdated && (
+              <p className="text-xs text-slate-400 mt-1">
+                Updated: {lastUpdated.toLocaleTimeString()}
+              </p>
+            )}
+            <button
+              onClick={() => fetchData(false)}
+              className="mt-2 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1 rounded transition-colors"
+            >
+              Refresh Now
+            </button>
+          </div>
         </div>
       </div>
 

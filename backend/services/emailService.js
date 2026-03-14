@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const EmailDeliveryLog = require('../models/EmailDeliveryLog');
+const TrackingToken = require('../models/TrackingToken');
 
 const createTransporter = () => {
   return nodemailer.createTransport({
@@ -23,13 +24,14 @@ const sendPhishingEmail = async (campaignId, user, template, trackingToken, orga
 
   try {
     const transporter = createTransporter();
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const trackingLink = `${frontendUrl}/phishing/${trackingToken}`;
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
+    const clickTrackLink = `${backendUrl}/api/track/click/${trackingToken}`;
+    const openTrackPixel = `${backendUrl}/api/track/open/${trackingToken}`;
 
     const emailBody = template.email_body
       .replace(/{{name}}/g, user.name)
       .replace(/{{department}}/g, user.department)
-      .replace(/{{link}}/g, trackingLink);
+      .replace(/{{link}}/g, clickTrackLink);
 
     const mailOptions = {
       from: process.env.SMTP_USER,
@@ -39,9 +41,9 @@ const sendPhishingEmail = async (campaignId, user, template, trackingToken, orga
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           ${emailBody}
           <br/>
-          <a href="${trackingLink}" style="color: #0066cc;">Click here</a>
+          <a href="${clickTrackLink}" style="color: #0066cc;">Click here</a>
         </div>
-        <img src="${process.env.BACKEND_URL || 'http://localhost:5000'}/api/track/open/${trackingToken}" width="1" height="1" style="display:none;" />
+        <img src="${openTrackPixel}" width="1" height="1" style="display:none;" />
       `
     };
 
@@ -49,6 +51,12 @@ const sendPhishingEmail = async (campaignId, user, template, trackingToken, orga
     deliveryLog.email_status = 'sent';
     deliveryLog.smtp_response = info.response || 'Email sent successfully';
     await deliveryLog.save();
+
+    // Update TrackingToken with email_sent_time
+    await TrackingToken.findOneAndUpdate(
+      { token: trackingToken },
+      { email_sent_time: new Date() }
+    );
 
     return { success: true, messageId: info.messageId };
   } catch (error) {

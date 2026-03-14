@@ -1,6 +1,7 @@
 const express = require('express');
 const Campaign = require('../models/Campaign');
 const InteractionLog = require('../models/InteractionLog');
+const TrackingToken = require('../models/TrackingToken');
 const User = require('../models/User');
 const Template = require('../models/Template');
 const { auth, authorize } = require('../middleware/auth');
@@ -104,6 +105,15 @@ router.post('/:id/launch', auth, authorize('admin'), async (req, res) => {
     for (const user of targetUsers) {
       const trackingToken = uuidv4();
 
+      // Create TrackingToken document for this user+campaign
+      await TrackingToken.create({
+        token: trackingToken,
+        user_id: user._id,
+        campaign_id: campaign._id,
+        organization_id: orgId
+      });
+
+      // Create InteractionLog to track all interactions
       await InteractionLog.create({
         user_id: user._id,
         campaign_id: campaign._id,

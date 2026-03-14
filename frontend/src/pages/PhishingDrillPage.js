@@ -13,6 +13,9 @@ const PhishingDrillPage = () => {
   useEffect(() => {
     const fetchInfo = async () => {
       try {
+        // Record link click when page loads (fallback tracking)
+        try { await api.get(`/track/click/${token}`); } catch (e) {}
+
         const res = await api.get(`/track/info/${token}`);
         setInfo(res.data);
         if (res.data.already_reported) setStep('reported');

@@ -2,6 +2,8 @@ const express = require('express');
 const multer = require('multer');
 const csv = require('csv-parser');
 const fs = require('fs');
+const path = require('path');
+const XLSX = require('xlsx');
 const User = require('../models/User');
 const Organization = require('../models/Organization');
 const { auth, authorize } = require('../middleware/auth');
@@ -36,7 +38,7 @@ router.get('/departments', auth, authorize('admin', 'cybersecurity', 'analyst'),
   }
 });
 
-// POST /api/users/upload - upload CSV of target users
+// POST /api/users/upload - upload CSV or XLSX of target users
 router.post('/upload', auth, authorize('admin'), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
@@ -46,27 +48,62 @@ router.post('/upload', auth, authorize('admin'), upload.single('file'), async (r
     const users = [];
     const errors = [];
     const defaultPassword = 'FinShield@2024';
+    const ext = path.extname(req.file.originalname).toLowerCase();
 
-    await new Promise((resolve, reject) => {
-      fs.createReadStream(req.file.path)
-        .pipe(csv())
-        .on('data', (row) => {
-          if (row.name && row.email && row.department) {
-            users.push({
-              name: row.name.trim(),
-              email: row.email.trim().toLowerCase(),
-              department: row.department.trim(),
-              password: defaultPassword,
-              role: 'employee',
-              organization_id: orgId
-            });
-          } else {
-            errors.push(row);
-          }
-        })
-        .on('end', resolve)
-        .on('error', reject);
-    });
+    // Parse file based on extension
+    if (ext === '.xlsx' || ext === '.xls') {
+      // Handle Excel files
+      const workbook = XLSX.readFile(req.file.path);
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+      for (const row of rows) {
+        // Try to find name/email/department columns (case-insensitive)
+        const name = row.name || row.Name || row.NAME || row['Full Name'] || row['full name'] || '';
+        const email = row.email || row.Email || row.EMAIL || row['Email ID'] || row['email id'] || row['Email Id'] || row['email Id'] || '';
+        const department = row.department || row.Department || row.DEPARTMENT || row.dept || row.Dept || '';
+
+        if (name.toString().trim() && email.toString().trim() && department.toString().trim()) {
+          users.push({
+            name: name.toString().trim(),
+            email: email.toString().trim().toLowerCase(),
+            department: department.toString().trim(),
+            password: defaultPassword,
+            role: 'employee',
+            organization_id: orgId
+          });
+        } else {
+          errors.push(row);
+        }
+      }
+    } else {
+      // Handle CSV files
+      await new Promise((resolve, reject) => {
+        fs.createReadStream(req.file.path)
+          .pipe(csv())
+          .on('data', (row) => {
+            const name = row.name || row.Name || row.NAME || '';
+            const email = row.email || row.Email || row.EMAIL || '';
+            const department = row.department || row.Department || row.DEPARTMENT || '';
+
+            if (name.trim() && email.trim() && department.trim()) {
+              users.push({
+                name: name.trim(),
+                email: email.trim().toLowerCase(),
+                department: department.trim(),
+                password: defaultPassword,
+                role: 'employee',
+                organization_id: orgId
+              });
+            } else {
+              errors.push(row);
+            }
+          })
+          .on('end', resolve)
+          .on('error', reject);
+      });
+    }
 
     const results = { created: 0, skipped: 0, errors: errors.length };
     const newDepts = new Set();

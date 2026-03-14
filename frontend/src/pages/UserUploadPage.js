@@ -73,16 +73,16 @@ const UserUploadPage = () => {
         </div>
       )}
 
-      {/* Upload CSV */}
+      {/* Upload CSV / Excel */}
       <div className="bg-white rounded-xl shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Upload CSV</h2>
+        <h2 className="text-lg font-semibold mb-4">Upload Users File</h2>
         <form onSubmit={handleUpload} className="flex items-center gap-4">
-          <input type="file" accept=".csv" onChange={(e) => setFile(e.target.files[0])} className="text-sm" />
+          <input type="file" accept=".csv,.xlsx,.xls" onChange={(e) => setFile(e.target.files[0])} className="text-sm" />
           <button type="submit" disabled={!file} className="bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-medium">
             Upload
           </button>
         </form>
-        <p className="text-xs text-slate-400 mt-2">CSV format: name, email, department (with headers)</p>
+        <p className="text-xs text-slate-400 mt-2">Supports CSV and Excel (.xlsx, .xls). Required columns: name, email, department</p>
       </div>
 
       {/* Add Single User */}
