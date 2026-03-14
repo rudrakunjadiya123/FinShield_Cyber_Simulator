@@ -21,7 +21,6 @@ const Navbar = () => {
       { to: '/users', label: 'Users' },
       { to: '/analytics', label: 'Analytics' },
       { to: '/leaderboard', label: 'Leaderboard' },
-      { to: '/reports', label: 'Reports' },
     ],
     cybersecurity: [
       { to: '/dashboard', label: 'Dashboard' },
@@ -32,7 +31,6 @@ const Navbar = () => {
     analyst: [
       { to: '/dashboard', label: 'Dashboard' },
       { to: '/analytics', label: 'Analytics' },
-      { to: '/reports', label: 'Reports' },
       { to: '/leaderboard', label: 'Leaderboard' },
     ],
     employee: [
