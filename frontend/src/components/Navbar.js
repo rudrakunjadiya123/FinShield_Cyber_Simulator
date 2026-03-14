@@ -19,15 +19,20 @@ const Navbar = () => {
       { to: '/campaigns', label: 'Campaigns' },
       { to: '/templates', label: 'Templates' },
       { to: '/users', label: 'Users' },
+      { to: '/analytics', label: 'Analytics' },
       { to: '/leaderboard', label: 'Leaderboard' },
+      { to: '/reports', label: 'Reports' },
     ],
     cybersecurity: [
       { to: '/dashboard', label: 'Dashboard' },
       { to: '/templates', label: 'Templates' },
+      { to: '/analytics', label: 'Analytics' },
       { to: '/leaderboard', label: 'Leaderboard' },
     ],
     analyst: [
       { to: '/dashboard', label: 'Dashboard' },
+      { to: '/analytics', label: 'Analytics' },
+      { to: '/reports', label: 'Reports' },
       { to: '/leaderboard', label: 'Leaderboard' },
     ],
     employee: [

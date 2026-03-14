@@ -10,6 +10,8 @@ import CampaignPage from './pages/CampaignPage';
 import CampaignDetailPage from './pages/CampaignDetailPage';
 import TemplatePage from './pages/TemplatePage';
 import UserUploadPage from './pages/UserUploadPage';
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import ReportPage from './pages/ReportPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import PhishingDrillPage from './pages/PhishingDrillPage';
 
@@ -65,6 +67,24 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute roles={['admin']}>
             <UserUploadPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute roles={['admin', 'cybersecurity', 'analyst']}>
+            <AnalyticsDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute roles={['admin', 'analyst']}>
+            <ReportPage />
           </ProtectedRoute>
         }
       />
