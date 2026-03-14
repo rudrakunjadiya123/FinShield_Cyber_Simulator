@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
 
 const TemplatePage = () => {
-  const { user } = useAuth();
   const [templates, setTemplates] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [showAI, setShowAI] = useState(false);

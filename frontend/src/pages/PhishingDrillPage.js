@@ -4,7 +4,7 @@ import api from '../services/api';
 
 const PhishingDrillPage = () => {
   const { token } = useParams();
-  const [info, setInfo] = useState(null);
+  const [, setInfo] = useState(null);
   const [step, setStep] = useState('warning'); // warning, form, result, reported
   const [explanation, setExplanation] = useState([]);
   const [loading, setLoading] = useState(true);
