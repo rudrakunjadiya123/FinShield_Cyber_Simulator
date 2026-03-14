@@ -1,0 +1,11 @@
+{
+  "name": "finshield",
+  "version": "1.0.0",
+  "description": "FinShield - Cybersecurity Simulation & Risk Assessment Platform",
+  "scripts": {
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm start",
+    "seed": "cd backend && npm run seed",
+    "install-all": "cd backend && npm install && cd ../frontend && npm install"
+  }
+}
