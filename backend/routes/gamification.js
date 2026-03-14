@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const { auth, authorize } = require('../middleware/auth');
 const { getLeaderboard, getDepartmentRanking } = require('../services/gamificationService');
 const InteractionLog = require('../models/InteractionLog');
@@ -18,10 +19,51 @@ router.get('/leaderboard', auth, authorize('admin', 'cybersecurity', 'analyst'),
       filter.department = department;
     }
 
-    const leaderboard = await User.find(filter)
+    const users = await User.find(filter)
       .select('name email department points security_level')
-      .sort({ points: -1 })
       .limit(limit);
+
+    // Compute security_score from InteractionLog for each user (same formula as analytics)
+    const logMatch = { organization_id: new mongoose.Types.ObjectId(orgId) };
+    if (department && department !== 'all') {
+      // Can't filter by department here directly, will handle below
+    }
+
+    const userStats = await InteractionLog.aggregate([
+      { $match: logMatch },
+      {
+        $group: {
+          _id: '$user_id',
+          total: { $sum: 1 },
+          clicked: { $sum: { $cond: ['$link_clicked', 1, 0] } },
+          reported: { $sum: { $cond: ['$reported_email', 1, 0] } },
+          submitted: { $sum: { $cond: ['$form_submitted', 1, 0] } }
+        }
+      }
+    ]);
+
+    const statsMap = {};
+    for (const s of userStats) {
+      const total = s.total || 0;
+      let score = 100;
+      if (total > 0) {
+        const clickPenalty = (s.clicked / total) * 30;
+        const submitPenalty = (s.submitted / total) * 40;
+        const reportBonus = (s.reported / total) * 20;
+        score = Math.max(0, Math.min(100, Math.round(100 - clickPenalty - submitPenalty + reportBonus)));
+      }
+      statsMap[s._id.toString()] = score;
+    }
+
+    const leaderboard = users.map(u => ({
+      _id: u._id,
+      name: u.name,
+      email: u.email,
+      department: u.department,
+      points: u.points || 0,
+      security_level: u.security_level,
+      security_score: statsMap[u._id.toString()] ?? 100
+    })).sort((a, b) => b.security_score - a.security_score);
 
     res.json(leaderboard);
   } catch (error) {

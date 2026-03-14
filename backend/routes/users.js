@@ -105,13 +105,24 @@ router.post('/upload', auth, authorize('admin'), upload.single('file'), async (r
       });
     }
 
-    const results = { created: 0, skipped: 0, errors: errors.length };
+    const results = { created: 0, skipped: 0, updated: 0, errors: errors.length };
     const newDepts = new Set();
     for (const userData of users) {
       try {
         const existing = await User.findOne({ email: userData.email });
         if (existing) {
-          results.skipped++;
+          // User exists in THIS org - skip
+          if (existing.organization_id.toString() === orgId.toString()) {
+            results.skipped++;
+          } else {
+            // User exists in another org - reassign to this org
+            existing.organization_id = orgId;
+            existing.department = userData.department;
+            existing.name = userData.name;
+            await existing.save();
+            results.updated++;
+            newDepts.add(userData.department);
+          }
         } else {
           await User.create(userData);
           results.created++;
@@ -135,7 +146,7 @@ router.post('/upload', auth, authorize('admin'), upload.single('file'), async (r
 
     fs.unlinkSync(req.file.path);
 
-    await logAudit(req.user._id, 'upload', 'users', null, `Uploaded ${results.created} users`, orgId);
+    await logAudit(req.user._id, 'upload', 'users', null, `Uploaded: ${results.created} created, ${results.updated} updated, ${results.skipped} skipped`, orgId);
     res.json({ message: 'Upload complete', ...results });
   } catch (error) {
     res.status(500).json({ message: error.message });

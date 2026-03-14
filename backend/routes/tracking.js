@@ -57,14 +57,9 @@ router.get('/click/:token', async (req, res) => {
       }
     }
 
-    // Step 3: Update InteractionLog (link_clicked + auto-mark email_opened)
+    // Step 3: Update InteractionLog (link_clicked only — do NOT auto-mark email_opened here)
     const log = await InteractionLog.findOne({ tracking_token: token });
     if (log) {
-      // If they clicked, they obviously opened the email too
-      if (!log.email_opened) {
-        log.email_opened = true;
-        log.email_opened_at = new Date();
-      }
       if (!log.link_clicked) {
         log.link_clicked = true;
         log.link_clicked_at = new Date();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../services/api';
 
 const UserUploadPage = () => {
@@ -13,9 +13,7 @@ const UserUploadPage = () => {
   const [showAdd, setShowAdd] = useState(false);
   const fileInputRef = useRef(null);
 
-  useEffect(() => { fetchUsers(); }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const [userRes, deptRes] = await Promise.all([
@@ -26,11 +24,12 @@ const UserUploadPage = () => {
       setDepartments(deptRes.data);
     } catch (err) {
       console.error(err);
-      showMsg('Failed to load users', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
   const showMsg = (text, type = 'info') => setMessage({ text, type });
 
@@ -53,7 +52,7 @@ const UserUploadPage = () => {
       const res = await api.post('/users/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      showMsg(`Upload complete: ${res.data.created} created, ${res.data.skipped} skipped, ${res.data.errors} errors`, 'success');
+      showMsg(`Upload complete: ${res.data.created} created, ${res.data.updated || 0} updated, ${res.data.skipped} skipped, ${res.data.errors} errors`, 'success');
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
       fetchUsers();

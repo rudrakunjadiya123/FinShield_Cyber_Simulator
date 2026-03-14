@@ -10,6 +10,7 @@ const CampaignDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [actionMsg, setActionMsg] = useState('');
 
   const fetchData = useCallback(async (showLoading = false) => {
     if (showLoading) setLoading(true);
@@ -38,6 +39,20 @@ const CampaignDetailPage = () => {
     return () => clearInterval(interval);
   }, [fetchData]);
 
+  const handleResetAndRelaunch = async () => {
+    if (!window.confirm('This will delete current tracking data and re-send emails with updated tracking links. Continue?')) return;
+    try {
+      setActionMsg('Resetting campaign...');
+      await api.post(`/campaigns/${id}/reset`);
+      setActionMsg('Sending new emails...');
+      await api.post(`/campaigns/${id}/launch`);
+      setActionMsg('Campaign re-launched! New emails sent with correct tracking links.');
+      fetchData(true);
+    } catch (err) {
+      setActionMsg(err.response?.data?.message || 'Re-launch failed');
+    }
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center h-64">
       <div className="text-center">
@@ -57,6 +72,13 @@ const CampaignDetailPage = () => {
         &larr; Back to Campaigns
       </button>
 
+      {actionMsg && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg mb-4 flex justify-between items-center">
+          <span>{actionMsg}</span>
+          <button onClick={() => setActionMsg('')} className="font-bold ml-4">&times;</button>
+        </div>
+      )}
+
       {/* Campaign Header */}
       <div className="bg-white rounded-xl shadow p-6 mb-6">
         <div className="flex justify-between items-start flex-wrap gap-4">
@@ -68,6 +90,17 @@ const CampaignDetailPage = () => {
           </div>
           <div className="text-right">
             <StatusBadge status={campaign.status} />
+            {campaign.status === 'running' && (
+              <div className="mt-2">
+                <button
+                  onClick={handleResetAndRelaunch}
+                  className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-300 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                  title="Re-send emails with correct tracking URLs (use if tracking links were broken)"
+                >
+                  Reset & Re-launch
+                </button>
+              </div>
+            )}
             <div className="mt-2 flex items-center justify-end gap-1 text-xs text-green-600">
               <span className={`inline-block w-2 h-2 rounded-full ${isRefreshing ? 'bg-yellow-500' : 'bg-green-500 animate-pulse'}`}></span>
               {isRefreshing ? 'Updating...' : 'Live - Refreshing every 5s'}

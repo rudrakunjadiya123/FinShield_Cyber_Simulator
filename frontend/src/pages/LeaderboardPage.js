@@ -12,6 +12,7 @@ const LeaderboardPage = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showScoreInfo, setShowScoreInfo] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchLeaderboard = useCallback(async () => {
     try {
@@ -24,12 +25,19 @@ const LeaderboardPage = () => {
       setLeaderboard(lbRes.data);
       setDeptRanking(deptRes.data);
       setDepartments(deptsRes.data);
+      setLastUpdated(new Date());
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }, [selectedDept]);
 
   useEffect(() => {
     fetchLeaderboard();
+  }, [fetchLeaderboard]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => fetchLeaderboard(), 30000);
+    return () => clearInterval(interval);
   }, [fetchLeaderboard]);
 
   const fetchEmployeeDetail = async (userId) => {
@@ -54,16 +62,30 @@ const LeaderboardPage = () => {
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Security Leaderboard</h1>
           <p className="text-sm text-slate-500 mt-1">Track employee security awareness performance</p>
+          {lastUpdated && (
+            <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+              <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              Live · Updated {lastUpdated.toLocaleTimeString()}
+            </p>
+          )}
         </div>
-        <button
-          onClick={() => setShowScoreInfo(!showScoreInfo)}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 text-sm font-medium text-slate-700"
-        >
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => fetchLeaderboard()}
+            className="px-3 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-600"
+          >
+            Refresh
+          </button>
+          <button
+            onClick={() => setShowScoreInfo(!showScoreInfo)}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 text-sm font-medium text-slate-700"
+          >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           How Scoring Works
         </button>
+        </div>
       </div>
 
       {/* Score Explanation Panel */}
@@ -130,7 +152,8 @@ const LeaderboardPage = () => {
                     <p className="text-xs text-slate-400 truncate">{user.department} &middot; {user.email}</p>
                   </div>
                   <div className="text-right ml-3 flex-shrink-0">
-                    <p className="text-lg font-bold text-cyan-600">{user.points}</p>
+                    <p className="text-lg font-bold text-cyan-600">{user.security_score ?? 100}<span className="text-xs font-normal text-slate-400">/100</span></p>
+                    <p className="text-xs text-slate-400">{user.points} pts</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       user.security_level === 'Security Champion' ? 'bg-green-100 text-green-700' :
                       user.security_level === 'Aware' ? 'bg-yellow-100 text-yellow-700' :
@@ -210,7 +233,7 @@ const ScoreExplanation = ({ onClose }) => (
     <div className="p-5">
       {/* Points System */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-3">Points System</h3>
+        <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-3">Points System (used for Security Level badge)</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
             <p className="text-2xl font-bold text-green-600">+10</p>
@@ -220,7 +243,7 @@ const ScoreExplanation = ({ onClose }) => (
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
             <p className="text-2xl font-bold text-green-600">+5</p>
             <p className="text-xs text-green-700 mt-1 font-medium">Ignore Phishing Link</p>
-            <p className="text-xs text-green-600 mt-0.5">Good - did not interact</p>
+            <p className="text-xs text-green-600 mt-0.5">Awarded when campaign ends</p>
           </div>
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
             <p className="text-2xl font-bold text-red-600">-5</p>
@@ -233,18 +256,32 @@ const ScoreExplanation = ({ onClose }) => (
             <p className="text-xs text-red-600 mt-0.5">Critical - data breach risk</p>
           </div>
         </div>
+        <p className="text-xs text-slate-400 mt-2">* The +5 ignore bonus is automatically awarded to employees who received an email but did not click, submit, or report when the admin marks the campaign as complete.</p>
       </div>
 
       {/* Security Score Formula */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-3">Security Score (0-100)</h3>
+        <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-1">Security Score (shown in Leaderboard & Employee Dashboard)</h3>
+        <p className="text-xs text-slate-500 mb-3">Range: 0–100 · Higher is better · Calculated live from all campaign interactions</p>
         <div className="bg-slate-50 rounded-lg p-4 font-mono text-sm">
           <p className="text-slate-600">Score = 100</p>
           <p className="text-green-600 ml-4">+ (reported / total) x 20 &nbsp;<span className="text-slate-400 font-sans">Reporting bonus</span></p>
           <p className="text-red-600 ml-4">- (clicked / total) x 30 &nbsp;<span className="text-slate-400 font-sans">Click penalty</span></p>
           <p className="text-red-600 ml-4">- (submitted / total) x 40 &nbsp;<span className="text-slate-400 font-sans">Submission penalty</span></p>
           <div className="border-t border-slate-300 mt-2 pt-2">
-            <p className="text-slate-800 font-semibold">= Final Security Score</p>
+            <p className="text-slate-800 font-semibold">= Final Security Score (clamped 0–100)</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Vulnerability Score (Admin) */}
+      <div className="mb-6">
+        <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-1">Vulnerability Score (shown in Admin Dashboard)</h3>
+        <p className="text-xs text-slate-500 mb-3">Range: 0–100 · Higher means more at risk · Used to identify employees needing training</p>
+        <div className="bg-slate-50 rounded-lg p-4 font-mono text-sm">
+          <p className="text-slate-600">VScore = (clicked×20 + submitted×40) / total × (100/60)</p>
+          <div className="border-t border-slate-300 mt-2 pt-2 font-sans text-xs text-slate-500">
+            This score rises when an employee frequently clicks or submits — it does NOT factor in reporting.
           </div>
         </div>
       </div>

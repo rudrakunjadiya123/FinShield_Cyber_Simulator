@@ -144,6 +144,27 @@ router.post('/:id/launch', auth, authorize('admin'), async (req, res) => {
   }
 });
 
+// POST /api/campaigns/:id/reset - reset a campaign to draft (clears old tracking data)
+router.post('/:id/reset', auth, authorize('admin'), async (req, res) => {
+  try {
+    const orgId = req.user.organization_id;
+    const campaign = await Campaign.findOne({ _id: req.params.id, organization_id: orgId });
+    if (!campaign) return res.status(404).json({ message: 'Campaign not found' });
+
+    // Delete old tracking data so it can be re-launched fresh
+    await InteractionLog.deleteMany({ campaign_id: campaign._id });
+    await TrackingToken.deleteMany({ campaign_id: campaign._id });
+
+    campaign.status = 'draft';
+    await campaign.save();
+
+    await logAudit(req.user._id, 'reset', 'campaign', campaign._id, `Reset campaign: ${campaign.name}`, orgId);
+    res.json({ message: 'Campaign reset to draft. You can now re-launch it.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // POST /api/campaigns/:id/complete
 router.post('/:id/complete', auth, authorize('admin'), async (req, res) => {
   try {
@@ -151,8 +172,19 @@ router.post('/:id/complete', auth, authorize('admin'), async (req, res) => {
     if (!campaign) return res.status(404).json({ message: 'Campaign not found' });
     campaign.status = 'completed';
     await campaign.save();
+
+    // Award +5 ignore points to users who received email but never clicked, submitted, or reported
+    const logs = await InteractionLog.find({ campaign_id: campaign._id });
+    let ignoredCount = 0;
+    for (const log of logs) {
+      if (!log.link_clicked && !log.form_submitted && !log.reported_email) {
+        await require('../services/gamificationService').updateUserPoints(log.user_id, 'ignore_phishing');
+        ignoredCount++;
+      }
+    }
+
     await logAudit(req.user._id, 'complete', 'campaign', campaign._id, `Completed campaign: ${campaign.name}`, req.user.organization_id);
-    res.json({ message: 'Campaign marked as completed', campaign });
+    res.json({ message: 'Campaign marked as completed', campaign, ignored_rewarded: ignoredCount });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

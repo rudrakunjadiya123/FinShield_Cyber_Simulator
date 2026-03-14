@@ -6,7 +6,7 @@ import {
   LineChart, Line, PieChart, Pie, Cell
 } from 'recharts';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -423,7 +423,7 @@ const AdminDashboard = ({ user }) => {
       ['Report Rate', `${overview.report_rate || 0}%`]
     ];
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: [['Metric', 'Value']],
       body: overviewData,
@@ -449,7 +449,7 @@ const AdminDashboard = ({ user }) => {
       ['Emails Reported', interactionRate.emails_reported || 0]
     ];
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: [['Action', 'Count']],
       body: interactionData,
@@ -475,7 +475,7 @@ const AdminDashboard = ({ user }) => {
         `${maxValue > 0 ? ((item.value / maxValue) * 100).toFixed(1) : 0}%`
       ]);
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: yPos,
         head: [['Stage', 'Count', 'Rate']],
         body: funnelTableData,
@@ -502,7 +502,7 @@ const AdminDashboard = ({ user }) => {
         `${total > 0 ? ((item.value / total) * 100).toFixed(1) : 0}%`
       ]);
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: yPos,
         head: [['Attack Type', 'Count', 'Percentage']],
         body: attackData,
@@ -538,7 +538,7 @@ const AdminDashboard = ({ user }) => {
         emp.reported
       ]);
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: yPos,
         head: [['Rank', 'Name', 'Department', 'Risk Score', 'Clicked', 'Submitted', 'Reported']],
         body: employeeData,
@@ -579,7 +579,7 @@ const AdminDashboard = ({ user }) => {
         `${dept.report_rate}%`
       ]);
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: yPos,
         head: [['Department', 'Risk', 'Total', 'Clicked', 'Submitted', 'Reported', 'Click Rate', 'Report Rate']],
         body: deptData,
@@ -875,7 +875,7 @@ const AdminDashboard = ({ user }) => {
         <div className="bg-white rounded-xl shadow mb-6">
           <div className="p-5 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">Top High-Risk Employees</h3>
-            <p className="text-xs text-slate-500 mt-1">Employees with highest vulnerability scores based on phishing interactions</p>
+            <p className="text-xs text-slate-500 mt-1">Employees with highest vulnerability scores (0–100, higher = more at risk). See Leaderboard for Security Score (higher = safer).</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -884,7 +884,7 @@ const AdminDashboard = ({ user }) => {
                   <th className="text-left px-4 py-3 font-medium text-slate-600">Rank</th>
                   <th className="text-left px-4 py-3 font-medium text-slate-600">Employee</th>
                   <th className="text-left px-4 py-3 font-medium text-slate-600">Department</th>
-                  <th className="text-center px-4 py-3 font-medium text-slate-600">Risk Score</th>
+                  <th className="text-center px-4 py-3 font-medium text-slate-600">Vuln. Score</th>
                   <th className="text-center px-4 py-3 font-medium text-slate-600">Clicked</th>
                   <th className="text-center px-4 py-3 font-medium text-slate-600">Submitted</th>
                   <th className="text-center px-4 py-3 font-medium text-slate-600">Reported</th>
@@ -939,7 +939,7 @@ const AdminDashboard = ({ user }) => {
               <thead className="bg-slate-50">
                 <tr>
                   <th className="text-left px-4 py-3 font-medium text-slate-600">Department</th>
-                  <th className="text-center px-4 py-3 font-medium text-slate-600">Risk Score</th>
+                  <th className="text-center px-4 py-3 font-medium text-slate-600">Vuln. Score</th>
                   <th className="text-center px-4 py-3 font-medium text-slate-600">Total</th>
                   <th className="text-center px-4 py-3 font-medium text-slate-600">Opened</th>
                   <th className="text-center px-4 py-3 font-medium text-slate-600">Clicked</th>
