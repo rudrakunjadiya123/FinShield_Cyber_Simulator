@@ -41,6 +41,15 @@ app.use('/api/gamification', require('./routes/gamification'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/audit', require('./routes/audit'));
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'FinShield API Server',
+    status: 'running',
+    version: '1.0.0'
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
