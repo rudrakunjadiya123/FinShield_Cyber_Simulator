@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Target, Activity, Users, ChevronRight, BarChart, ShieldAlert, MailWarning } from 'lucide-react';
+import { Shield, Target, ChevronRight, BarChart, ShieldAlert, MailWarning } from 'lucide-react';
 
 const LandingPage = () => {
   const { user } = useAuth();

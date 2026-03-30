@@ -88,7 +88,6 @@ const EmployeeDashboard = ({ user }) => {
     return <div className="flex items-center justify-center h-64"><p className="text-slate-500">Loading your dashboard...</p></div>;
   }
 
-  const stats = data?.stats || {};
   const userData = data?.user || {};
   const recentActivity = data?.recentActivity || [];
 
@@ -101,13 +100,6 @@ const EmployeeDashboard = ({ user }) => {
       'Expert': 'text-yellow-600'
     };
     return colors[level] || 'text-slate-600';
-  };
-
-  const getScoreColor = (score) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    if (score >= 40) return 'text-orange-600';
-    return 'text-red-600';
   };
 
   return (

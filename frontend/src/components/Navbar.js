@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import {
   LayoutDashboard, Target, FileText, Users, GraduationCap,
-  Trophy, ClipboardCheck, Shield, User, LogOut, Menu, X, ChevronDown
+  ClipboardCheck, Shield, User, LogOut, Menu, X, ChevronDown
 } from 'lucide-react';
 
 const Navbar = () => {
