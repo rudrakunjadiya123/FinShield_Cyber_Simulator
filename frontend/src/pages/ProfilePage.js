@@ -3,7 +3,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const ProfilePage = () => {
-  const { user: _contextUser, updateAuthUser } = useAuth();
+  const { updateAuthUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
