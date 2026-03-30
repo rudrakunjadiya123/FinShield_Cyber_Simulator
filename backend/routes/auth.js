@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Organization = require('../models/Organization');
 const { auth } = require('../middleware/auth');
+const { injectDefaultTemplates } = require('../services/templateService');
 
 const router = express.Router();
 
@@ -45,6 +46,9 @@ router.post('/register', async (req, res) => {
 
       organization.created_by = user._id;
       await organization.save();
+
+      // Automatically inject the predefined templates for the new organization
+      await injectDefaultTemplates(organization._id, user._id);
 
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
       return res.status(201).json({
@@ -195,6 +199,39 @@ router.get('/organizations', async (req, res) => {
   try {
     const orgs = await Organization.find().select('name code industry size').sort({ name: 1 });
     res.json(orgs);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// PUT /api/auth/profile - update current user profile
+router.put('/profile', auth, async (req, res) => {
+  try {
+    const { name, password } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    if (name) user.name = name;
+    if (password) user.password = password; // bcrypt pre-save hash applies
+    
+    await user.save();
+    await user.populate('organization_id', 'name code');
+    
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department,
+        organization_id: user.organization_id?._id,
+        organization_name: user.organization_id?.name,
+        organization_code: user.organization_id?.code,
+        points: user.points,
+        security_level: user.security_level
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

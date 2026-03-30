@@ -14,9 +14,9 @@ const createTransporter = () => {
   });
 };
 
-const sendPhishingEmail = async (campaignId, user, template, trackingToken, organizationId) => {
+const sendPhishingEmail = async (campaign, user, template, trackingToken, organizationId) => {
   const deliveryLog = await EmailDeliveryLog.create({
-    campaign_id: campaignId,
+    campaign_id: campaign._id,
     user_id: user._id,
     organization_id: organizationId,
     email_status: 'pending'
@@ -28,7 +28,7 @@ const sendPhishingEmail = async (campaignId, user, template, trackingToken, orga
     const clickTrackLink = `${backendUrl}/api/track/click/${trackingToken}`;
     const openTrackPixel = `${backendUrl}/api/track/open/${trackingToken}`;
 
-    const emailBody = template.email_body
+    const emailBody = campaign.email_body
       .replace(/{{name}}/g, user.name)
       .replace(/{{department}}/g, user.department)
       .replace(/{{link}}/g, clickTrackLink);
@@ -36,7 +36,7 @@ const sendPhishingEmail = async (campaignId, user, template, trackingToken, orga
     const mailOptions = {
       from: process.env.SMTP_USER,
       to: user.email,
-      subject: template.email_subject.replace(/{{name}}/g, user.name),
+      subject: campaign.email_subject.replace(/{{name}}/g, user.name),
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           ${emailBody}

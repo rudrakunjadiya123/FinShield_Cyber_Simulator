@@ -7,6 +7,7 @@ const Template = require('../models/Template');
 const { auth, authorize } = require('../middleware/auth');
 const { logAudit } = require('../services/auditService');
 const { sendPhishingEmail } = require('../services/emailService');
+const { generateEmailContent } = require('../services/geminiService');
 const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
@@ -38,17 +39,35 @@ router.get('/:id', auth, authorize('admin', 'cybersecurity', 'analyst'), async (
   }
 });
 
+// POST /api/campaigns/generate-description - Generate email content via Gemini AI
+router.post('/generate-description', auth, authorize('admin', 'cybersecurity'), async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ message: 'Prompt is required' });
+    }
+    const content = await generateEmailContent(prompt);
+    res.json(content);
+  } catch (error) {
+    console.error('AI generation error:', error);
+    res.status(500).json({ message: error.message || 'Failed to generate content' });
+  }
+});
+
 // POST /api/campaigns - create campaign
 router.post('/', auth, authorize('admin'), async (req, res) => {
   try {
-    const { name, template_id, target_departments, launch_date, status } = req.body;
+    const { name, email_subject, email_body, template_id, target_departments, target_emails, launch_date, status } = req.body;
     const orgId = req.user.organization_id;
     const campaign = await Campaign.create({
       name,
+      email_subject,
+      email_body,
       template_id,
-      target_departments,
+      target_departments: target_departments || [],
+      target_emails: target_emails || [],
       launch_date,
-      status: status || 'draft',
+      status: status || (launch_date ? 'scheduled' : 'draft'),
       created_by: req.user._id,
       organization_id: orgId
     });
@@ -62,13 +81,42 @@ router.post('/', auth, authorize('admin'), async (req, res) => {
 // PUT /api/campaigns/:id
 router.put('/:id', auth, authorize('admin'), async (req, res) => {
   try {
+    const campaignToUpdate = await Campaign.findOne({ _id: req.params.id, organization_id: req.user.organization_id });
+    if (!campaignToUpdate) return res.status(404).json({ message: 'Campaign not found' });
+    if (new Date() >= new Date(campaignToUpdate.launch_date)) {
+      return res.status(403).json({ message: 'Cannot edit campaign after its scheduled launch date' });
+    }
+
     const campaign = await Campaign.findOneAndUpdate(
       { _id: req.params.id, organization_id: req.user.organization_id },
       req.body, { new: true }
     );
-    if (!campaign) return res.status(404).json({ message: 'Campaign not found' });
     await logAudit(req.user._id, 'update', 'campaign', campaign._id, `Updated campaign: ${campaign.name}`, req.user.organization_id);
     res.json(campaign);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// DELETE /api/campaigns/:id
+router.delete('/:id', auth, authorize('admin'), async (req, res) => {
+  try {
+    const campaign = await Campaign.findOne({ _id: req.params.id, organization_id: req.user.organization_id });
+    if (!campaign) return res.status(404).json({ message: 'Campaign not found' });
+    
+    if (new Date() >= new Date(campaign.launch_date)) {
+      return res.status(403).json({ message: 'Cannot delete campaign after its scheduled launch date' });
+    }
+    if (campaign.status === 'running' || campaign.status === 'completed') {
+      return res.status(400).json({ message: `Cannot delete a campaign that is ${campaign.status}` });
+    }
+
+    await InteractionLog.deleteMany({ campaign_id: campaign._id });
+    await TrackingToken.deleteMany({ campaign_id: campaign._id });
+    await Campaign.deleteOne({ _id: campaign._id });
+
+    await logAudit(req.user._id, 'delete', 'campaign', campaign._id, `Deleted campaign: ${campaign.name}`, req.user.organization_id);
+    res.json({ message: 'Campaign deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -122,7 +170,7 @@ router.post('/:id/launch', auth, authorize('admin'), async (req, res) => {
       });
 
       const emailResult = await sendPhishingEmail(
-        campaign._id,
+        campaign,
         user,
         campaign.template_id,
         trackingToken,

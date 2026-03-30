@@ -185,4 +185,47 @@ router.post('/add', auth, authorize('admin'), async (req, res) => {
   }
 });
 
+// PUT /api/users/update/:id - edit an employee user
+router.put('/update/:id', auth, authorize('admin'), async (req, res) => {
+  try {
+    const { name, email, department } = req.body;
+    const orgId = req.user.organization_id;
+    const user = await User.findOne({ _id: req.params.id, organization_id: orgId });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.role === 'admin') return res.status(403).json({ message: 'Cannot edit admin users' });
+
+    // Check if email is being changed to one that already exists
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists) return res.status(400).json({ message: 'Email already in use' });
+    }
+
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (department) user.department = department;
+    await user.save();
+
+    await logAudit(req.user._id, 'update', 'user', user._id, `Updated user: ${user.name}`, orgId);
+    res.json({ message: 'User updated', user: { _id: user._id, name: user.name, email: user.email, department: user.department } });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// DELETE /api/users/delete/:id - delete an employee user
+router.delete('/delete/:id', auth, authorize('admin'), async (req, res) => {
+  try {
+    const orgId = req.user.organization_id;
+    const user = await User.findOne({ _id: req.params.id, organization_id: orgId });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.role === 'admin') return res.status(403).json({ message: 'Cannot delete admin users' });
+
+    await User.findByIdAndDelete(user._id);
+    await logAudit(req.user._id, 'delete', 'user', user._id, `Deleted user: ${user.name}`, orgId);
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

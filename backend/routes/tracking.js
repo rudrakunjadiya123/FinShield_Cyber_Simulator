@@ -41,6 +41,7 @@ router.get('/open/:token', async (req, res) => {
 // GET /api/track/click/:token - when user clicks the phishing link
 // This is the main tracking route: GET /track/:token
 // Works from ANY device because the token is embedded in the URL
+// Serves the template HTML directly so no React frontend is needed
 router.get('/click/:token', async (req, res) => {
   try {
     const token = req.params.token;
@@ -57,26 +58,128 @@ router.get('/click/:token', async (req, res) => {
       }
     }
 
-    // Step 3: Update InteractionLog (link_clicked only — do NOT auto-mark email_opened here)
+    // Step 3: Update InteractionLog (link_clicked only)
     const log = await InteractionLog.findOne({ tracking_token: token });
     if (log) {
       if (!log.link_clicked) {
         log.link_clicked = true;
         log.link_clicked_at = new Date();
         await log.save();
-        // Step 5: Update gamification points
+        // Update gamification points
         await updateUserPoints(log.user_id, 'click_link');
       } else {
         await log.save();
       }
     }
 
-    // Step 6: Redirect user to phishing simulation page
     // If called via AJAX (from frontend), return JSON
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
       return res.json({ tracked: true });
     }
-    // Otherwise redirect to the phishing page with token
+
+    // Step 4: Serve the campaign's template HTML directly
+    // Look up the campaign and its template via the InteractionLog
+    const logWithTemplate = await InteractionLog.findOne({ tracking_token: token }).populate({
+      path: 'campaign_id',
+      populate: { path: 'template_id' }
+    });
+
+    const template = logWithTemplate?.campaign_id?.template_id;
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
+
+    if (template && template.html_code) {
+      const targetBtnId = template.target_button_id || '';
+      // Inject tracking script so button clicks are recorded
+      const trackingScript = `
+        <script>
+          (function() {
+            var token = "${token}";
+            var backendUrl = "${backendUrl}";
+            var targetButtonId = "${targetBtnId}";
+            
+            function logPhishingInteraction() {
+              fetch(backendUrl + '/api/track/submit/' + token, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+              }).then(function(res) { return res.json(); })
+                .then(function(data) { console.log('Interaction logged:', data); })
+                .catch(function(err) { console.error('Error logging interaction:', err); });
+            }
+            window.logPhishingInteraction = logPhishingInteraction;
+
+            document.addEventListener('DOMContentLoaded', function() {
+              // If admin specified a target button ID, attach ONLY to that element
+              if (targetButtonId) {
+                var targetEl = document.getElementById(targetButtonId);
+                if (targetEl) {
+                  targetEl.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    logPhishingInteraction();
+                  });
+                  console.log('Tracking attached to #' + targetButtonId);
+                }
+                return; // Skip generic detection
+              }
+
+              // Fallback: Auto-attach to forms and important buttons
+              var forms = document.querySelectorAll('form');
+              forms.forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                  e.preventDefault();
+                  logPhishingInteraction();
+                });
+              });
+              
+              var buttons = document.querySelectorAll('button, input[type="submit"], .btn, [role="button"]');
+              buttons.forEach(function(btn) {
+                var text = (btn.textContent || btn.value || '').toLowerCase();
+                if (text.includes('sign in') || text.includes('login') || text.includes('log in') ||
+                    text.includes('download') || text.includes('submit') || text.includes('verify') ||
+                    text.includes('continue') || text.includes('confirm') || text.includes('pay') ||
+                    text.includes('complete') || text.includes('register')) {
+                  btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    logPhishingInteraction();
+                  });
+                }
+              });
+
+              var links = document.querySelectorAll('a');
+              links.forEach(function(link) {
+                var text = (link.textContent || '').toLowerCase();
+                if (text.includes('sign in') || text.includes('login') || text.includes('download') ||
+                    text.includes('submit') || text.includes('verify') || text.includes('continue')) {
+                  link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    logPhishingInteraction();
+                  });
+                }
+              });
+            });
+          })();
+        </script>
+      `;
+
+      let htmlContent = template.html_code;
+
+      // Remove old tracking scripts if present
+      htmlContent = htmlContent.replace(/<!-- FINSHIELD TRACKING SCRIPT -->[\s\S]*?<\/script>/g, '');
+
+      // Inject the tracking script before </head> or </body>
+      if (htmlContent.includes('</head>')) {
+        htmlContent = htmlContent.replace('</head>', trackingScript + '</head>');
+      } else if (htmlContent.includes('</body>')) {
+        htmlContent = htmlContent.replace('</body>', trackingScript + '</body>');
+      } else {
+        htmlContent = htmlContent + trackingScript;
+      }
+
+      // Serve the HTML directly
+      res.setHeader('Content-Type', 'text/html');
+      return res.send(htmlContent);
+    }
+
+    // Fallback: redirect to frontend if no template HTML
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     res.redirect(`${frontendUrl}/phishing/${token}`);
   } catch (error) {
@@ -193,7 +296,9 @@ router.get('/info/:token', async (req, res) => {
     const template = log.campaign_id?.template_id;
     res.json({
       token: token,
-      email_subject: template?.email_subject || 'Phishing Simulation',
+      email_subject: log.campaign_id?.email_subject || 'Phishing Simulation',
+      html_code: template?.html_code || '',
+      template_name: template?.template_name || '',
       has_form: true,
       already_reported: log.reported_email,
       already_submitted: log.form_submitted,

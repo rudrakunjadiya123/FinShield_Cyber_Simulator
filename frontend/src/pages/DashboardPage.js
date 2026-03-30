@@ -7,22 +7,36 @@ import {
 } from 'recharts';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import AnalyticsDashboard from './AnalyticsDashboard';
 
 const DashboardPage = () => {
   const { user } = useAuth();
+  const [filters, setFilters] = useState({});
 
   // Show different dashboard based on role
   if (user?.role === 'employee') {
     return <EmployeeDashboard user={user} />;
   }
 
-  return <AdminDashboard user={user} />;
+  return (
+    <>
+      <AdminDashboard user={user} onFilterChange={setFilters} />
+      <AnalyticsDashboard filters={filters} />
+    </>
+  );
 };
 
 // Employee Dashboard - Personal stats only
 const EmployeeDashboard = ({ user }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Reporting State
+  const [reportSubject, setReportSubject] = useState('');
+  const [reportTime, setReportTime] = useState('');
+  const [reportLink, setReportLink] = useState('');
+  const [reportStatus, setReportStatus] = useState({ type: '', message: '' });
+  const [reportLoading, setReportLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -37,6 +51,38 @@ const EmployeeDashboard = ({ user }) => {
     };
     fetchData();
   }, []);
+
+  const handleReport = async (e) => {
+    e.preventDefault();
+    setReportLoading(true);
+    setReportStatus({ type: '', message: '' });
+    try {
+      const res = await api.post('/analytics/employee/report-phishing', {
+        subject: reportSubject,
+        time: reportTime,
+        link: reportLink
+      });
+      setReportStatus({
+        type: res.data.matched ? 'success' : 'info',
+        message: res.data.message
+      });
+      if (res.data.matched) {
+        // Refresh dashboard data
+        const refreshRes = await api.get('/analytics/my-stats');
+        setData(refreshRes.data);
+      }
+      setReportSubject('');
+      setReportTime('');
+      setReportLink('');
+    } catch (err) {
+      setReportStatus({ 
+        type: 'error', 
+        message: err.response?.data?.message || 'Failed to submit report' 
+      });
+    } finally {
+      setReportLoading(false);
+    }
+  };
 
   if (loading) {
     return <div className="flex items-center justify-center h-64"><p className="text-slate-500">Loading your dashboard...</p></div>;
@@ -67,12 +113,12 @@ const EmployeeDashboard = ({ user }) => {
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">My Security Dashboard</h1>
+        <h1 className="page-title">My Security Dashboard</h1>
         <p className="text-slate-500">Track your cybersecurity awareness progress</p>
       </div>
 
       {/* User Profile Card */}
-      <div className="bg-white rounded-xl shadow p-6 mb-6">
+      <div className="glass-card p-6 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="w-16 h-16 bg-cyan-100 rounded-full flex items-center justify-center mr-4">
@@ -94,81 +140,76 @@ const EmployeeDashboard = ({ user }) => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow p-5 text-center">
-          <p className="text-sm text-slate-500">Security Score</p>
-          <p className={`text-4xl font-bold mt-2 ${getScoreColor(stats.security_score)}`}>
-            {stats.security_score || 100}
-          </p>
-          <p className="text-xs text-slate-400 mt-1">out of 100</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-5 text-center">
-          <p className="text-sm text-slate-500">Your Points</p>
-          <p className="text-4xl font-bold mt-2 text-cyan-600">{userData.points || 0}</p>
-          <p className="text-xs text-slate-400 mt-1">gamification points</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-5 text-center">
-          <p className="text-sm text-slate-500">Phishing Tests</p>
-          <p className="text-4xl font-bold mt-2 text-slate-700">{stats.total_phishing_attempts || 0}</p>
-          <p className="text-xs text-slate-400 mt-1">received</p>
-        </div>
-      </div>
-
-      {/* Performance Breakdown */}
-      <div className="bg-white rounded-xl shadow p-6 mb-6">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Your Performance</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center p-4 bg-blue-50 rounded-lg">
-            <p className="text-2xl font-bold text-blue-600">{stats.emails_opened || 0}</p>
-            <p className="text-sm text-blue-700">Emails Opened</p>
+      {/* Report Suspicious Email */}
+      <div className="glass-card p-6 mb-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
           </div>
-          <div className="text-center p-4 bg-red-50 rounded-lg">
-            <p className="text-2xl font-bold text-red-600">{stats.links_clicked || 0}</p>
-            <p className="text-sm text-red-700">Links Clicked</p>
-            <p className="text-xs text-red-500">(-5 points each)</p>
-          </div>
-          <div className="text-center p-4 bg-orange-50 rounded-lg">
-            <p className="text-2xl font-bold text-orange-600">{stats.forms_submitted || 0}</p>
-            <p className="text-sm text-orange-700">Forms Submitted</p>
-            <p className="text-xs text-orange-500">(-10 points each)</p>
-          </div>
-          <div className="text-center p-4 bg-green-50 rounded-lg">
-            <p className="text-2xl font-bold text-green-600">{stats.emails_reported || 0}</p>
-            <p className="text-sm text-green-700">Emails Reported</p>
-            <p className="text-xs text-green-500">(+10 points each)</p>
+          <div>
+            <h3 className="text-lg font-semibold text-slate-800">Report Suspicious Email</h3>
+            <p className="text-sm text-slate-500">Received a phishing email? Report it to earn points.</p>
           </div>
         </div>
-      </div>
+        
+        {reportStatus.message && (
+          <div className={`p-3 rounded-lg mb-4 text-sm ${
+            reportStatus.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
+            reportStatus.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
+            'bg-blue-50 text-blue-700 border border-blue-200'
+          }`}>
+            {reportStatus.message}
+          </div>
+        )}
 
-      {/* Tips Section */}
-      <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-6 mb-6">
-        <h3 className="text-lg font-semibold text-cyan-800 mb-3">Security Tips</h3>
-        <ul className="space-y-2 text-sm text-cyan-700">
-          <li className="flex items-start">
-            <span className="mr-2">1.</span>
-            Always check the sender's email address carefully before clicking any links.
-          </li>
-          <li className="flex items-start">
-            <span className="mr-2">2.</span>
-            Hover over links to see where they actually lead before clicking.
-          </li>
-          <li className="flex items-start">
-            <span className="mr-2">3.</span>
-            Be suspicious of urgent requests, especially those asking for credentials.
-          </li>
-          <li className="flex items-start">
-            <span className="mr-2">4.</span>
-            When in doubt, report suspicious emails to your security team.
-          </li>
-        </ul>
+        <form onSubmit={handleReport} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Phishing Link (Recommended)</label>
+            <input 
+              type="url" 
+              className="glass-input" 
+              placeholder="Paste the suspicious link from the email here"
+              value={reportLink}
+              onChange={(e) => setReportLink(e.target.value)}
+            />
+            <p className="text-xs text-slate-400 mt-1">Paste the link from the phishing email for automatic identification.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Email Subject (Optional)</label>
+              <input 
+                type="text" 
+                className="glass-input" 
+                placeholder="e.g. Urgent: Account Verification"
+                value={reportSubject}
+                onChange={(e) => setReportSubject(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Time Received (Optional)</label>
+              <input 
+                type="datetime-local" 
+                className="glass-input" 
+                value={reportTime}
+                onChange={(e) => setReportTime(e.target.value)}
+              />
+            </div>
+          </div>
+          <button 
+            type="submit" 
+            disabled={reportLoading || (!reportSubject && !reportLink)}
+            className="gradient-btn px-6 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {reportLoading ? 'Submitting...' : 'Submit Report'}
+          </button>
+        </form>
       </div>
 
       {/* Recent Activity */}
       {recentActivity.length > 0 && (
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="glass-card p-6">
           <h3 className="text-lg font-semibold text-slate-800 mb-4">Recent Phishing Tests</h3>
           <div className="space-y-3">
             {recentActivity.map((activity, i) => (
@@ -255,7 +296,7 @@ const MultiSelectDropdown = ({ label, options, selected, onChange, placeholder }
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative z-20" ref={dropdownRef}>
       <label className="block text-xs font-medium text-slate-500 mb-1">{label}</label>
       <button
         type="button"
@@ -311,7 +352,7 @@ const MultiSelectDropdown = ({ label, options, selected, onChange, placeholder }
 };
 
 // Admin/Cybersecurity/Analyst Dashboard - Full analytics with charts
-const AdminDashboard = ({ user }) => {
+const AdminDashboard = ({ user, onFilterChange }) => {
   const [loading, setLoading] = useState(true);
   const [filterOptions, setFilterOptions] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
@@ -376,6 +417,18 @@ const AdminDashboard = ({ user }) => {
   useEffect(() => {
     fetchDashboardData(true);
   }, [fetchDashboardData]);
+
+  // Notify parent of filter changes
+  useEffect(() => {
+    if (onFilterChange) {
+      onFilterChange({
+        departments: selectedDepartments,
+        campaigns: selectedCampaigns,
+        users: selectedUsers,
+        timeRange: selectedTimeRange
+      });
+    }
+  }, [selectedDepartments, selectedCampaigns, selectedUsers, selectedTimeRange, onFilterChange]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -638,11 +691,11 @@ const AdminDashboard = ({ user }) => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="page-container">
       {/* Header */}
       <div className="mb-6 flex flex-wrap justify-between items-start gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Analytics Dashboard</h1>
+          <h1 className="page-title">Analytics Dashboard</h1>
           <p className="text-slate-500">Welcome back, {user?.name}</p>
         </div>
         <div className="flex items-center gap-3">
@@ -673,9 +726,8 @@ const AdminDashboard = ({ user }) => {
         </div>
       </div>
 
-      {/* Filters */}
       {filterOptions && (
-        <div className="bg-white rounded-xl shadow p-4 mb-6">
+        <div className="glass-card p-4 mb-6 relative z-10">
           <div className="flex items-center gap-2 mb-3">
             <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -745,7 +797,7 @@ const AdminDashboard = ({ user }) => {
       {/* Charts Row 1: Bar Chart & Line Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Bar Chart - Phishing Email Interaction Rate */}
-        <div className="bg-white rounded-xl shadow p-5">
+        <div className="glass-card p-5">
           <h3 className="text-base font-semibold text-slate-800 mb-4">Phishing Email Interaction Rate</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -768,7 +820,7 @@ const AdminDashboard = ({ user }) => {
         </div>
 
         {/* Line Chart - Department Risk Over Time */}
-        <div className="bg-white rounded-xl shadow p-5">
+        <div className="glass-card p-5">
           <h3 className="text-base font-semibold text-slate-800 mb-4">Department Risk Level Over Time</h3>
           <div className="h-64">
             {departmentRiskTimeline.length > 0 ? (
@@ -805,7 +857,7 @@ const AdminDashboard = ({ user }) => {
       {/* Charts Row 2: Pie Chart & Funnel Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Pie Chart - Attack Type Distribution */}
-        <div className="bg-white rounded-xl shadow p-5">
+        <div className="glass-card p-5">
           <h3 className="text-base font-semibold text-slate-800 mb-4">Attack Type Distribution</h3>
           <div className="h-64">
             {attackTypeDistribution.length > 0 ? (
@@ -838,7 +890,7 @@ const AdminDashboard = ({ user }) => {
         </div>
 
         {/* Simple Funnel - Campaign Performance */}
-        <div className="bg-white rounded-xl shadow p-5">
+        <div className="glass-card p-5">
           <h3 className="text-base font-semibold text-slate-800 mb-4">Campaign Performance Funnel</h3>
           <div className="space-y-3">
             {funnelData.length > 0 ? (
@@ -872,10 +924,10 @@ const AdminDashboard = ({ user }) => {
 
       {/* High-Risk Employees Table */}
       {highRiskEmployees.length > 0 && (
-        <div className="bg-white rounded-xl shadow mb-6">
+        <div className="glass-card mb-6">
           <div className="p-5 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">Top High-Risk Employees</h3>
-            <p className="text-xs text-slate-500 mt-1">Employees with highest vulnerability scores (0–100, higher = more at risk). See Leaderboard for Security Score (higher = safer).</p>
+            <p className="text-xs text-slate-500 mt-1">Employees with highest vulnerability scores (0–100, higher = more at risk)</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -929,7 +981,7 @@ const AdminDashboard = ({ user }) => {
 
       {/* Department Risk Summary */}
       {departmentBreakdown.length > 0 && (
-        <div className="bg-white rounded-xl shadow">
+        <div className="glass-card">
           <div className="p-5 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">Department Risk Summary</h3>
             <p className="text-xs text-slate-500 mt-1">Risk scores and interaction metrics by department</p>
@@ -993,13 +1045,13 @@ const StatCard = ({ label, value, icon, color }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow p-4">
+    <div className="stat-card">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs text-slate-500">{label}</p>
+        <div className="text-left">
+          <p className="text-xs text-slate-500 font-medium">{label}</p>
           <p className="text-xl font-bold text-slate-800 mt-1">{value}</p>
         </div>
-        <div className={`${color} w-10 h-10 rounded-lg flex items-center justify-center`}>
+        <div className={`${color} w-10 h-10 rounded-xl flex items-center justify-center shadow-md`}>
           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {icons[icon]}
           </svg>

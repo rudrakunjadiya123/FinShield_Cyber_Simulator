@@ -67,7 +67,7 @@ const CampaignDetailPage = () => {
   const noData = !stats || stats.total_targets === 0;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="page-container">
       <button onClick={() => navigate('/campaigns')} className="text-cyan-600 hover:text-cyan-700 mb-4 inline-flex items-center gap-1 text-sm">
         &larr; Back to Campaigns
       </button>
@@ -80,10 +80,10 @@ const CampaignDetailPage = () => {
       )}
 
       {/* Campaign Header */}
-      <div className="bg-white rounded-xl shadow p-6 mb-6">
+      <div className="glass-card p-6 mb-6">
         <div className="flex justify-between items-start flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800">{campaign.name}</h1>
+            <h1 className="page-title">{campaign.name}</h1>
             <p className="text-slate-500 mt-1">Template: <span className="font-medium">{campaign.template_id?.template_name || 'N/A'}</span></p>
             <p className="text-slate-500">Departments: <span className="font-medium">{campaign.target_departments?.join(', ') || 'All'}</span></p>
             <p className="text-slate-500">Launch: <span className="font-medium">{new Date(campaign.launch_date).toLocaleString()}</span></p>
@@ -119,7 +119,7 @@ const CampaignDetailPage = () => {
       </div>
 
       {noData ? (
-        <div className="bg-white rounded-xl shadow p-10 text-center mb-6">
+        <div className="glass-card p-10 text-center mb-6">
           <div className="text-5xl mb-3">📭</div>
           <h3 className="text-lg font-semibold text-slate-700 mb-1">No Interaction Data Yet</h3>
           <p className="text-slate-500 text-sm">
@@ -140,7 +140,7 @@ const CampaignDetailPage = () => {
           </div>
 
           {/* Progress Bars */}
-          <div className="bg-white rounded-xl shadow p-5 mb-6">
+          <div className="glass-card p-5 mb-6">
             <h2 className="text-sm font-semibold text-slate-700 mb-4">Interaction Breakdown</h2>
             <div className="space-y-3">
               {[
@@ -166,7 +166,7 @@ const CampaignDetailPage = () => {
           </div>
 
           {/* User Interactions Table */}
-          <div className="bg-white rounded-xl shadow overflow-hidden">
+          <div className="table-glass overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b">
               <h2 className="text-base font-semibold text-slate-800">User Interactions</h2>
               <span className="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-full">{stats.logs?.length || 0} users</span>
@@ -208,7 +208,7 @@ const CampaignDetailPage = () => {
 };
 
 const StatCard = ({ label, value, sub, color = 'text-slate-800' }) => (
-  <div className="bg-white rounded-xl shadow p-4">
+  <div className="glass-card p-4">
     <p className="text-xs text-slate-500">{label}</p>
     <p className={`text-2xl font-bold mt-1 ${color}`}>{value ?? 0}</p>
     {sub && <p className="text-xs text-slate-400">{sub}</p>}

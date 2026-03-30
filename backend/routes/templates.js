@@ -9,7 +9,12 @@ const router = express.Router();
 // GET /api/templates - templates for user's org
 router.get('/', auth, authorize('admin', 'cybersecurity'), async (req, res) => {
   try {
-    const templates = await Template.find({ organization_id: req.user.organization_id })
+    const templates = await Template.find({ 
+      $or: [
+        { organization_id: req.user.organization_id },
+        { is_predefined: true }
+      ]
+    })
       .populate('created_by', 'name email')
       .sort({ createdAt: -1 });
     res.json(templates);
@@ -21,7 +26,13 @@ router.get('/', auth, authorize('admin', 'cybersecurity'), async (req, res) => {
 // GET /api/templates/:id
 router.get('/:id', auth, authorize('admin', 'cybersecurity'), async (req, res) => {
   try {
-    const template = await Template.findOne({ _id: req.params.id, organization_id: req.user.organization_id })
+    const template = await Template.findOne({ 
+      _id: req.params.id, 
+      $or: [
+        { organization_id: req.user.organization_id },
+        { is_predefined: true }
+      ]
+    })
       .populate('created_by', 'name email');
     if (!template) return res.status(404).json({ message: 'Template not found' });
     res.json(template);
@@ -33,13 +44,14 @@ router.get('/:id', auth, authorize('admin', 'cybersecurity'), async (req, res) =
 // POST /api/templates/create
 router.post('/create', auth, authorize('admin', 'cybersecurity'), async (req, res) => {
   try {
-    const { template_name, email_subject, email_body, phishing_link, difficulty_level } = req.body;
+    const { template_name, description, phishing_link, difficulty_level, html_code, target_button_id } = req.body;
     const orgId = req.user.organization_id;
     const template = await Template.create({
       template_name,
-      email_subject,
-      email_body,
+      description: description || '',
       phishing_link: phishing_link || '',
+      html_code: html_code || '',
+      target_button_id: target_button_id || '',
       difficulty_level: difficulty_level || 'medium',
       created_by: req.user._id,
       organization_id: orgId
@@ -54,10 +66,11 @@ router.post('/create', auth, authorize('admin', 'cybersecurity'), async (req, re
 // PUT /api/templates/update/:id
 router.put('/update/:id', auth, authorize('admin', 'cybersecurity'), async (req, res) => {
   try {
-    const template = await Template.findOneAndUpdate(
-      { _id: req.params.id, organization_id: req.user.organization_id },
-      req.body, { new: true }
-    );
+    const query = req.user.role === 'admin' 
+      ? { _id: req.params.id, $or: [{ organization_id: req.user.organization_id }, { is_predefined: true }] }
+      : { _id: req.params.id, organization_id: req.user.organization_id };
+      
+    const template = await Template.findOneAndUpdate(query, req.body, { new: true });
     if (!template) return res.status(404).json({ message: 'Template not found' });
     await logAudit(req.user._id, 'update', 'template', template._id, `Updated template: ${template.template_name}`, req.user.organization_id);
     res.json(template);
@@ -69,8 +82,12 @@ router.put('/update/:id', auth, authorize('admin', 'cybersecurity'), async (req,
 // DELETE /api/templates/delete/:id
 router.delete('/delete/:id', auth, authorize('admin', 'cybersecurity'), async (req, res) => {
   try {
-    const template = await Template.findOneAndDelete({ _id: req.params.id, organization_id: req.user.organization_id });
+    const template = await Template.findOne({ _id: req.params.id, organization_id: req.user.organization_id });
     if (!template) return res.status(404).json({ message: 'Template not found' });
+    if (template.is_predefined) {
+      return res.status(403).json({ message: 'Cannot delete predefined system templates' });
+    }
+    await Template.findByIdAndDelete(template._id);
     await logAudit(req.user._id, 'delete', 'template', template._id, `Deleted template: ${template.template_name}`, req.user.organization_id);
     res.json({ message: 'Template deleted successfully' });
   } catch (error) {

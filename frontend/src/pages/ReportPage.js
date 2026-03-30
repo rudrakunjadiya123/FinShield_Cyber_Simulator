@@ -50,9 +50,9 @@ const ReportPage = () => {
   if (loading) return <div className="flex items-center justify-center h-64"><p>Loading...</p></div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="page-container">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Security Reports</h1>
+        <h1 className="page-title">Security Reports</h1>
         {user?.role === 'analyst' && (
           <button onClick={() => setShowForm(!showForm)} className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg font-medium">
             {showForm ? 'Cancel' : '+ New Report'}
@@ -68,7 +68,7 @@ const ReportPage = () => {
       )}
 
       {showForm && (
-        <div className="bg-white rounded-xl shadow p-6 mb-6">
+        <div className="glass-card p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4">Create Security Report</h2>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
@@ -156,7 +156,7 @@ const ReportPage = () => {
           <p className="text-slate-400 col-span-2 text-center py-8">No reports created yet</p>
         ) : (
           reports.map(r => (
-            <div key={r._id} className="bg-white rounded-xl shadow p-5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedReport(r)}>
+            <div key={r._id} className="glass-card p-5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedReport(r)}>
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-semibold text-slate-800">{r.title}</h3>
                 <span className={`text-lg font-bold ${r.risk_score > 50 ? 'text-red-600' : r.risk_score > 25 ? 'text-yellow-600' : 'text-green-600'}`}>

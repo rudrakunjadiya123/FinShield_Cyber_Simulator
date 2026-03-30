@@ -1,7 +1,27 @@
+# Dependencies
 node_modules/
+
+# Environment files (contain secrets!)
 .env
-uploads/
+.env.local
+.env.production
+
+# Build output
 build/
+dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
 *.log
-nul
-test_users.csv
+npm-debug.log*
+
+# ngrok binary (dev only)
+ngrok*
+!start_tunnel.js

@@ -8,6 +8,59 @@ const InteractionLog = require('./models/InteractionLog');
 const EmailDeliveryLog = require('./models/EmailDeliveryLog');
 const AuditLog = require('./models/AuditLog');
 const Report = require('./models/Report');
+const Quiz = require('./models/Quiz');
+const QuizAttempt = require('./models/QuizAttempt');
+const fs = require('fs');
+const path = require('path');
+
+const html1 = fs.readFileSync(path.join(__dirname, 'templates', 'Registration_QR.html'), 'utf8');
+const html2 = fs.readFileSync(path.join(__dirname, 'templates', 'Github_Fake_Login.html'), 'utf8');
+const html3 = fs.readFileSync(path.join(__dirname, 'templates', 'Product_Fake_Index.html'), 'utf8');
+const html4 = fs.readFileSync(path.join(__dirname, 'templates', 'Salary_Slip_Fake.html'), 'utf8');
+
+// Predefined HTML/CSS/JS landing page templates
+const predefinedTemplates = [
+  {
+    template_name: 'Registration QR Code',
+    email_subject: 'Complete your Registration',
+    email_body: '<p>Dear Employee,</p><p>Please complete the payment step to finalize your account setup. Scan the QR code in the attached page to proceed.</p><p><a href="{{link}}">Complete Registration Now</a></p><p>Regards,<br/>HR Department</p>',
+    phishing_link: '{{link}}',
+    category: 'QR-Phishing',
+    difficulty_level: 'medium',
+    is_predefined: true,
+    html_code: html1
+  },
+  {
+    template_name: 'GitHub Fake Login',
+    email_subject: 'Sign in to GitHub',
+    email_body: '<p>Dear Developer,</p><p>We detected a new login to your GitHub account. Please sign in to verify this activity.</p><p><a href="{{link}}">Verify Login Here</a></p><p>Regards,<br/>GitHub Security</p>',
+    phishing_link: '{{link}}',
+    category: 'Credential-Harvesting',
+    difficulty_level: 'hard',
+    is_predefined: true,
+    html_code: html2
+  },
+  {
+    template_name: 'Nexus AI Login',
+    email_subject: 'Nexus AI: Unlock the future',
+    email_body: '<p>Hi there,</p><p>Experience the state-of-the-art AI infrastructure designed to scale with your most ambitious ideas. Log in to your Nexus AI account to get started.</p><p><a href="{{link}}">Access Nexus AI</a></p><p>Best,<br/>Nexus Team</p>',
+    phishing_link: '{{link}}',
+    category: 'Credential-Harvesting',
+    difficulty_level: 'medium',
+    is_predefined: true,
+    html_code: html3
+  },
+  {
+    template_name: 'Salary Slip Download',
+    email_subject: 'Your Salary Slip is Ready',
+    email_body: '<p>Dear Employee,</p><p>Your salary slip for this month is ready for download. Please access the secure portal to view it.</p><p><a href="{{link}}">Download Salary Slip</a></p><p>Regards,<br/>Payroll Department</p>',
+    phishing_link: '{{link}}',
+    category: 'Malware-Simulation',
+    difficulty_level: 'easy',
+    is_predefined: true,
+    html_code: html4
+  }
+];
 
 const seedDB = async () => {
   await mongoose.connect(process.env.MONGODB_URI);
@@ -22,7 +75,9 @@ const seedDB = async () => {
     InteractionLog.deleteMany({}),
     EmailDeliveryLog.deleteMany({}),
     AuditLog.deleteMany({}),
-    Report.deleteMany({})
+    Report.deleteMany({}),
+    Quiz.deleteMany({}),
+    QuizAttempt.deleteMany({})
   ]);
   console.log('Cleared all existing data');
 
@@ -90,7 +145,17 @@ const seedDB = async () => {
   }
   console.log('Created 25 sample employees across 5 departments');
 
-  // Create sample templates
+  // Create predefined templates (system templates)
+  for (const tpl of predefinedTemplates) {
+    await Template.create({
+      ...tpl,
+      created_by: cyberUser._id,
+      organization_id: demoOrg._id
+    });
+  }
+  console.log(`Created ${predefinedTemplates.length} predefined system templates`);
+
+  // Create additional sample templates (non-predefined)
   await Template.create({
     template_name: 'Password Reset Urgent',
     email_subject: 'Urgent: Your Password Expires Today',
@@ -111,17 +176,7 @@ const seedDB = async () => {
     organization_id: demoOrg._id
   });
 
-  await Template.create({
-    template_name: 'IT Security Verification',
-    email_subject: 'Annual Security Compliance Verification Required',
-    email_body: '<p>Dear {{name}},</p><p>As part of our annual security compliance audit, all {{department}} department employees must verify their identity and update their security preferences.</p><p>This is mandatory and must be completed by end of business today.</p><p><a href="{{link}}">Complete Verification</a></p><p>Best regards,<br/>Information Security Team</p>',
-    phishing_link: '{{link}}',
-    difficulty_level: 'medium',
-    created_by: cyberUser._id,
-    organization_id: demoOrg._id
-  });
-
-  console.log('Created 3 sample templates');
+  console.log('Created 2 additional sample templates');
 
   console.log('\n========================================');
   console.log('         SEED COMPLETE!');
@@ -133,10 +188,8 @@ const seedDB = async () => {
   console.log('  Admin:         admin@finshield.com / admin123');
   console.log('  Cybersecurity: cyber@finshield.com / cyber123');
   console.log('  Analyst:       analyst@finshield.com / analyst123');
-  console.log('\nTo create a new organization:');
-  console.log('  Go to /register and select "Create New Organization"');
-  console.log('\nTo join this demo organization:');
-  console.log(`  Use code: ${demoOrg.code}`);
+  console.log('\nPredefined Templates:');
+  predefinedTemplates.forEach(t => console.log(`  - ${t.template_name} (${t.category})`));
   console.log('========================================\n');
   process.exit(0);
 };

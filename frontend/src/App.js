@@ -1,6 +1,7 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
@@ -10,9 +11,12 @@ import CampaignPage from './pages/CampaignPage';
 import CampaignDetailPage from './pages/CampaignDetailPage';
 import TemplatePage from './pages/TemplatePage';
 import UserUploadPage from './pages/UserUploadPage';
-import AnalyticsDashboard from './pages/AnalyticsDashboard';
-import LeaderboardPage from './pages/LeaderboardPage';
+import ProfilePage from './pages/ProfilePage';
+import EmployeeReportsPage from './pages/EmployeeReportsPage';
+
 import PhishingDrillPage from './pages/PhishingDrillPage';
+import TrainingPage from './pages/TrainingPage';
+import LandingPage from './pages/LandingPage';
 
 const AppRoutes = () => {
   const { user } = useAuth();
@@ -71,24 +75,35 @@ const AppRoutes = () => {
       />
 
       <Route
-        path="/analytics"
+        path="/employee-reports"
         element={
-          <ProtectedRoute roles={['admin', 'cybersecurity', 'analyst']}>
-            <AnalyticsDashboard />
+          <ProtectedRoute roles={['admin', 'cybersecurity']}>
+            <EmployeeReportsPage />
+          </ProtectedRoute>
+        }
+      />
+
+
+
+      <Route
+        path="/training"
+        element={
+          <ProtectedRoute roles={['admin', 'cybersecurity', 'employee']}>
+            <TrainingPage />
           </ProtectedRoute>
         }
       />
 
       <Route
-        path="/leaderboard"
+        path="/profile"
         element={
-          <ProtectedRoute roles={['admin', 'cybersecurity', 'analyst']}>
-            <LeaderboardPage />
+          <ProtectedRoute roles={['admin', 'cybersecurity', 'analyst', 'employee']}>
+            <ProfilePage />
           </ProtectedRoute>
         }
       />
 
-      <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
@@ -96,11 +111,12 @@ const AppRoutes = () => {
 
 const AppLayout = () => {
   const { user } = useAuth();
-  const isPhishingPage = window.location.pathname.startsWith('/phishing/');
+  const location = useLocation();
+  const isPublicPage = location.pathname === '/' || location.pathname.startsWith('/phishing/');
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      {user && !isPhishingPage && <Navbar />}
+    <div className="min-h-screen text-slate-900" style={{ fontFamily: "'Inter', sans-serif" }}>
+      {user && !isPublicPage && <Navbar />}
       <AppRoutes />
     </div>
   );
@@ -109,9 +125,11 @@ const AppLayout = () => {
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <AppLayout />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppLayout />
+        </AuthProvider>
+      </ThemeProvider>
     </Router>
   );
 }

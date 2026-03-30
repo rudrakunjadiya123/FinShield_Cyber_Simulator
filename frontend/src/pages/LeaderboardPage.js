@@ -57,10 +57,10 @@ const LeaderboardPage = () => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="page-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Security Leaderboard</h1>
+          <h1 className="page-title">Security Leaderboard</h1>
           <p className="text-sm text-slate-500 mt-1">Track employee security awareness performance</p>
           {lastUpdated && (
             <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
@@ -92,7 +92,7 @@ const LeaderboardPage = () => {
       {showScoreInfo && <ScoreExplanation onClose={() => setShowScoreInfo(false)} />}
 
       {/* Department Filter */}
-      <div className="bg-white rounded-xl shadow mb-6 p-4">
+      <div className="glass-card mb-6 p-4">
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-sm font-medium text-slate-600">Filter by Department:</span>
           <button
@@ -119,7 +119,7 @@ const LeaderboardPage = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Employee Leaderboard - Left Column */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow">
+        <div className="lg:col-span-2 glass-card">
           <div className="px-5 py-4 border-b flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-800">Employee Rankings</h2>
@@ -167,7 +167,7 @@ const LeaderboardPage = () => {
         </div>
 
         {/* Department Ranking - Right Column */}
-        <div className="bg-white rounded-xl shadow">
+        <div className="glass-card">
           <div className="px-5 py-4 border-b">
             <h2 className="text-lg font-semibold text-slate-800">Department Ranking</h2>
           </div>
@@ -221,7 +221,7 @@ const LeaderboardPage = () => {
 
 /* ======================== Score Explanation Panel ======================== */
 const ScoreExplanation = ({ onClose }) => (
-  <div className="bg-white rounded-xl shadow mb-6 overflow-hidden">
+  <div className="glass-card mb-6 overflow-hidden">
     <div className="px-5 py-4 border-b flex items-center justify-between bg-gradient-to-r from-cyan-50 to-white">
       <h2 className="text-lg font-semibold text-slate-800">How the Scoring System Works</h2>
       <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
@@ -322,7 +322,7 @@ const COLORS = ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6'];
 
 const EmployeeDetailPanel = ({ data, loading, onClose }) => {
   if (loading) return (
-    <div className="bg-white rounded-xl shadow p-8 flex items-center justify-center">
+    <div className="glass-card p-8 flex items-center justify-center">
       <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full"></div>
     </div>
   );
@@ -338,7 +338,7 @@ const EmployeeDetailPanel = ({ data, loading, onClose }) => {
   ].filter(d => d.value > 0);
 
   return (
-    <div className="bg-white rounded-xl shadow overflow-hidden">
+    <div className="table-glass overflow-hidden">
       {/* Header */}
       <div className="px-6 py-4 border-b bg-gradient-to-r from-slate-50 to-white flex items-center justify-between">
         <div className="flex items-center gap-4">

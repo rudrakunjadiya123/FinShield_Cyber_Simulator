@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete your Registration</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --alert-red: #ef4444;
+            --success-green: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Main Container */
+        .container {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 480px;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .qr-section {
+            background-color: #f9fafb;
+            border: 1px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-image {
+            width: 200px;
+            height: 200px;
+            margin-bottom: 16px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .qr-text {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .payment-amount {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .loading-text {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e5e7eb;
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Modal / Popup Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            overflow-y: auto;
+            transform: translateY(20px) scale(0.95);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            position: relative;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-header {
+            background-color: var(--alert-red);
+            color: white;
+            padding: 24px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        .modal-header h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .modal-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .tips-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-main);
+        }
+
+        .tips-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .tip-item {
+            background-color: #f9fafb;
+            padding: 16px;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .tip-icon {
+            font-size: 20px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .tip-header {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 6px;
+        }
+
+        .tip-title {
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 15px;
+        }
+
+        .tip-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            padding-left: 32px;
+        }
+
+        .close-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            margin-top: 24px;
+            background-color: var(--text-main);
+            color: white;
+            text-align: center;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .close-btn:hover {
+            background-color: #374151;
+        }
+
+        /* Custom Scrollbar for Modal */
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .modal-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 0 16px 16px 0;
+        }
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main Page Content -->
+    <div class="container">
+        <div class="header">
+            <h1>Complete your Registration</h1>
+            <p>Please complete the payment step to finalize your account setup.</p>
+        </div>
+
+        <div class="payment-amount">₹499.00</div>
+        
+        <div class="qr-section">
+            <img class="qr-image" src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay?pa=scammer@upi&pn=Scammer&am=499" alt="Payment QR Code">
+            <div class="qr-text">Scan QR for the payment</div>
+        </div>
+
+        <div class="loading-text">
+            <div class="spinner"></div>
+            Waiting for payment confirmation...
+        </div>
+    </div>
+
+    <!-- Phishing Awareness Modal -->
+    <div class="modal-overlay" id="phishingModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚠️ Security Alert</h2>
+                <p>This is a QR phishing attack implemented on you successfully. But relax, this is for experiment awareness, so Be Aware.</p>
+            </div>
+            <div class="modal-body">
+                <div class="tips-title">
+                    <span>💡</span> Tips to Protect Yourself
+                </div>
+                
+                <div class="tips-list">
+                    <div class="tip-item">
+                        <div class="tip-header">
+                            <span class="tip-icon">🔐</span>
+                            <span class="tip-title">Verify the QR code source</span>
+                        </div>
+                        <div class="tip-desc">Only scan QR codes from trusted merchants or official platforms. Be cautious if a QR code appears pasted over another one or placed in suspicious locations.</div>
+                    </div>
+
+                    <div class="tip-item">
+                        <div class="tip-header">
+                            <span class="tip-icon">💰</span>
+                            <span class="tip-title">Check the payment details before confirming</span>
+                        </div>
+                        <div class="tip-desc">After scanning a QR code, always verify the receiver’s name, UPI ID, or merchant details before completing the transaction.</div>
+                    </div>
+
+                    <div class="tip-item">
+                        <div class="tip-header">
+                            <span class="tip-icon">🔗</span>
+                            <span class="tip-title">Avoid random QR codes shared via messages</span>
+                        </div>
+                        <div class="tip-desc">Do not scan QR codes received through unknown emails, social media, or messaging apps claiming prizes, refunds, or urgent payments.</div>
+                    </div>
+
+                    <div class="tip-item">
+                        <div class="tip-header">
+                            <span class="tip-icon">🛑</span>
+                            <span class="tip-title">Remember: QR codes cannot "receive" money</span>
+                        </div>
+                        <div class="tip-desc">If someone asks you to scan a QR code to receive money, it is almost always a scam. Scanning a payment QR usually means you are sending money.</div>
+                    </div>
+
+                    <div class="tip-item">
+                        <div class="tip-header">
+                            <span class="tip-icon">⚠️</span>
+                            <span class="tip-title">Watch for tampered QR stickers</span>
+                        </div>
+                        <div class="tip-desc">Fraudsters sometimes place fake QR stickers over legitimate ones at shops, parking meters, or public places.</div>
+                    </div>
+
+                    <div class="tip-item">
+                        <div class="tip-header">
+                            <span class="tip-icon">🔍</span>
+                            <span class="tip-title">Confirm with the merchant if unsure</span>
+                        </div>
+                        <div class="tip-desc">If you feel suspicious, ask the merchant to show the original payment QR or verify through their official payment method.</div>
+                    </div>
+
+                    <div class="tip-item">
+                        <div class="tip-header">
+                            <span class="tip-icon">🛡️</span>
+                            <span class="tip-title">Use secure payment apps and alerts</span>
+                        </div>
+                        <div class="tip-desc">Enable transaction alerts and payment notifications so you can quickly detect unauthorized transactions.</div>
+                    </div>
+                </div>
+
+                <button class="close-btn" onclick="closeModal()">I Understand, Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Function to close the modal
+        function closeModal() {
+            const modal = document.getElementById('phishingModal');
+            modal.classList.remove('active');
+        }
+        
+        // Let's trigger it immediately to track it in our system since they clicked the link already
+        setTimeout(() => {
+          document.getElementById('phishingModal').classList.add('active');
+        }, 3000);
+    </script>
+    <!-- FINSHIELD TRACKING SCRIPT -->
+    <script>
+    (function() {
+      const pathParts = window.location.pathname.split('/');
+      const token = pathParts[pathParts.length - 1];
+      
+      if (!token || token === 'phishing') {
+         console.log('No tracking token found in URL');
+         return;
+      }
+      
+      function logPhishingInteraction() {
+        fetch('/api/track/submit/' + token, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        }).then(res => res.json())
+          .then(data => console.log('Interaction logged:', data))
+          .catch(err => console.error('Error logging interaction:', err));
+      }
+      window.logPhishingInteraction = logPhishingInteraction;
+      
+      fetch('/api/track/info/' + token).catch(e => console.log('Info fetch error'));
+    })();
+    </script>
+</body>
+</html>

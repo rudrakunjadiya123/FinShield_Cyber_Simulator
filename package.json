@@ -6,6 +6,7 @@
     "backend": "cd backend && npm run dev",
     "frontend": "cd frontend && npm start",
     "seed": "cd backend && npm run seed",
+    "tunnel": "cd backend && npm run tunnel",
     "install-all": "cd backend && npm install && cd ../frontend && npm install"
   }
 }

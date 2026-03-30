@@ -7,6 +7,8 @@ const app = express();
 
 // Connect to MongoDB
 connectDB();
+const { startScheduler } = require('./services/schedulerService');
+startScheduler();
 
 // Middleware - allow requests from both localhost and network IP
 app.use(cors({
@@ -40,6 +42,7 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/gamification', require('./routes/gamification'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/audit', require('./routes/audit'));
+app.use('/api/quiz', require('./routes/quiz'));
 
 // Root route
 app.get('/', (req, res) => {

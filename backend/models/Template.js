@@ -2,9 +2,12 @@ const mongoose = require('mongoose');
 
 const templateSchema = new mongoose.Schema({
   template_name: { type: String, required: true },
-  email_subject: { type: String, required: true },
-  email_body: { type: String, required: true },
+  description: { type: String, default: '' },
   phishing_link: { type: String, default: '' },
+  html_code: { type: String, default: '' },
+  target_button_id: { type: String, default: '' },
+  category: { type: String, default: 'general' },
+  is_predefined: { type: Boolean, default: false },
   difficulty_level: {
     type: String,
     enum: ['easy', 'medium', 'hard'],

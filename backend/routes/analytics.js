@@ -240,6 +240,14 @@ router.get('/dashboard-v2', auth, authorize('admin', 'cybersecurity', 'analyst')
     const allCampaigns = await Campaign.countDocuments({ organization_id: orgId });
     const activeCampaigns = await Campaign.countDocuments({ organization_id: orgId, status: 'running' });
 
+    // ===== 8. Recent Employee Reports =====
+    const recentReports = await InteractionLog.find({ organization_id: orgId, reported_email: true })
+      .populate('user_id', 'name department')
+      .populate('campaign_id', 'name email_subject')
+      .sort({ reported_at: -1 })
+      .limit(5)
+      .lean();
+
     res.json({
       overview: {
         total_users: totalUsers,
@@ -259,8 +267,104 @@ router.get('/dashboard-v2', auth, authorize('admin', 'cybersecurity', 'analyst')
       attackTypeDistribution,
       highRiskEmployees,
       funnelData,
-      departmentBreakdown
+      departmentBreakdown,
+      recentReports
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST /api/analytics/employee/report-phishing - Employee reports a phishing simulation
+router.post('/employee/report-phishing', auth, async (req, res) => {
+  try {
+    const { subject, time, link } = req.body;
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    let matchedLog = null;
+
+    // ===== Strategy 1: Link-based identification (most accurate) =====
+    if (link) {
+      // Extract tracking token from the URL (last segment after /)
+      const urlParts = link.trim().replace(/\/+$/, '').split('/');
+      const token = urlParts[urlParts.length - 1];
+
+      if (token) {
+        const TrackingToken = require('../models/TrackingToken');
+        const trackingEntry = await TrackingToken.findOne({ token });
+
+        if (trackingEntry) {
+          // Find the interaction log by tracking_token
+          matchedLog = await InteractionLog.findOne({ tracking_token: token, reported_email: false });
+        }
+      }
+    }
+
+    // ===== Strategy 2: Subject-based matching (fallback) =====
+    if (!matchedLog && subject) {
+      const logs = await InteractionLog.find({ user_id: userId, reported_email: false })
+        .populate('campaign_id', 'email_subject');
+
+      const searchSubject = subject.toLowerCase().trim();
+      const searchWords = searchSubject.split(' ').filter(w => w.length >= 4);
+
+      for (const log of logs) {
+        if (log.campaign_id && log.campaign_id.email_subject) {
+          const campSubject = log.campaign_id.email_subject.toLowerCase().trim();
+          let hasMatch = false;
+          for (const word of searchWords) {
+            if (campSubject.includes(word)) {
+              hasMatch = true;
+              break;
+            }
+          }
+          if (searchSubject.includes(campSubject) || campSubject.includes(searchSubject) || hasMatch) {
+            matchedLog = log;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!link && !subject) {
+      return res.status(400).json({ message: 'Please provide a link or email subject.' });
+    }
+
+    if (matchedLog) {
+      matchedLog.reported_email = true;
+      matchedLog.reported_at = new Date();
+      await matchedLog.save();
+
+      user.points = (user.points || 0) + 10;
+      await user.save();
+
+      return res.json({ 
+        success: true, 
+        matched: true, 
+        message: 'Phishing attempt reported successfully! 10 points awarded.' 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      matched: false, 
+      message: 'Report submitted to the security team.' 
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET /api/analytics/employee-reports - Admins view all employee phishing reports
+router.get('/employee-reports', auth, authorize('admin', 'cybersecurity'), async (req, res) => {
+  try {
+    const orgId = req.user.organization_id;
+    const reports = await InteractionLog.find({ organization_id: orgId, reported_email: true })
+      .populate('user_id', 'name email department')
+      .populate('campaign_id', 'name template_id')
+      .sort({ reported_at: -1 });
+    res.json(reports);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

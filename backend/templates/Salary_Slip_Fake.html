@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Salary Slip Download</title>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --bg-color: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-1: #3b82f6;
+      --accent-2: #8b5cf6;
+      --accent-3: #ec4899;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .container {
+      position: relative;
+      width: 100%;
+      max-width: 100vw;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* Background Animations */
+    .background-elements {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.5;
+      animation: float 10s infinite ease-in-out alternate;
+    }
+
+    .blob-1 {
+      width: 400px;
+      height: 400px;
+      background: var(--accent-1);
+      top: -100px;
+      left: -100px;
+      animation-delay: 0s;
+    }
+
+    .blob-2 {
+      width: 500px;
+      height: 500px;
+      background: var(--accent-2);
+      bottom: -200px;
+      right: -100px;
+      animation-delay: -2s;
+    }
+
+    .blob-3 {
+      width: 350px;
+      height: 350px;
+      background: var(--accent-3);
+      top: 30%;
+      left: 40%;
+      animation: float 12s infinite ease-in-out alternate-reverse;
+      opacity: 0.3;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translate(0, 0) scale(1);
+      }
+
+      100% {
+        transform: translate(30px, -50px) scale(1.1);
+      }
+    }
+
+    /* Glassmorphism Card */
+    .glass-card {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 480px;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @keyframes slideUp {
+      0% {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Header */
+    .card-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .icon-wrapper {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      margin-bottom: 20px;
+      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.3);
+    }
+
+    .header-icon {
+      color: #a5b4fc;
+    }
+
+    .card-header h2 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      background: linear-gradient(to right, #fff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* User Info Section */
+    .user-info-section {
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .info-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      width: max-content;
+      margin: 0 auto 20px;
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .info-details {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .info-label {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .info-value {
+      font-weight: 600;
+      font-size: 16px;
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px 12px;
+      border-radius: 8px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--card-border);
+      width: 100%;
+    }
+
+    /* Action Section */
+    .action-section {
+      text-align: center;
+    }
+
+    .action-title {
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 10px;
+      color: #e2e8f0;
+    }
+
+    .action-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .download-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--primary), var(--accent-2));
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .download-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: all 0.5s ease;
+    }
+
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 25px -5px rgba(99, 102, 241, 0.5);
+    }
+
+    .download-btn:hover::before {
+      left: 100%;
+    }
+
+    .download-btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-icon {
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+
+      0%,
+      20%,
+      50%,
+      80%,
+      100% {
+        transform: translateY(0);
+      }
+
+      40% {
+        transform: translateY(-4px);
+      }
+
+      60% {
+        transform: translateY(-2px);
+      }
+    }
+
+    /* Footer */
+    .security-footer {
+      margin-top: 30px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .glass-card {
+        padding: 30px 20px;
+      }
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 650px;
+      padding: 35px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      transform: translateY(20px) scale(0.95);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .modal-icon.warning {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      margin-bottom: 20px;
+    }
+
+    .modal-header h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .sim-desc {
+      color: #cbd5e1;
+      background: rgba(239, 68, 68, 0.1);
+      border-left: 4px solid #ef4444;
+      padding: 14px 18px;
+      border-radius: 4px 8px 8px 4px;
+      margin-bottom: 30px;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .tips-title {
+      font-size: 19px;
+      font-weight: 600;
+      color: #f8fafc;
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .tips-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .tips-list li {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 18px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: transform 0.2s ease;
+    }
+    
+    .tips-list li:hover {
+      transform: translateX(5px);
+      background: rgba(30, 41, 59, 0.8);
+    }
+
+    .tip-icon {
+      font-size: 28px;
+      line-height: 1;
+      padding-top: 2px;
+    }
+
+    .tips-list strong {
+      display: block;
+      color: #f8fafc;
+      margin-bottom: 6px;
+      font-size: 16px;
+    }
+
+    .tips-list p {
+      color: #94a3b8;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .modal-footer-msg {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 14.5px;
+      line-height: 1.6;
+      margin-bottom: 25px;
+      padding: 15px;
+      background: rgba(99, 102, 241, 0.08);
+      border-radius: 12px;
+      border: 1px solid rgba(99, 102, 241, 0.15);
+    }
+
+    .close-modal-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--primary), var(--accent-2));
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.3);
+    }
+
+    .close-modal-btn:hover {
+      box-shadow: 0 15px 25px -5px rgba(99, 102, 241, 0.5);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="background-elements">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+    </div>
+
+    <div class="glass-card">
+      <div class="card-header">
+        <div class="icon-wrapper">
+          <i data-lucide="file-text" class="header-icon" width="40" height="40"></i>
+        </div>
+        <h2>Secure Document Portal</h2>
+        <p class="subtitle">Confidential Payroll Information</p>
+      </div>
+
+      <div class="user-info-section">
+        <div class="info-badge">
+          <i data-lucide="shield-check" class="badge-icon" width="18" height="18"></i>
+          <span>Verified Employee</span>
+        </div>
+
+        <div class="info-details">
+          <div class="info-item">
+            <span class="info-label">Employee ID</span>
+            <span class="info-value">01</span>
+          </div>
+          <div class="divider"></div>
+          <div class="info-item">
+            <span class="info-label">Name of User</span>
+            <span class="info-value">ABC</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-section">
+        <h3 class="action-title">Download your salary slip</h3>
+        <p class="action-desc">Your document for March 2026 is ready. Click below to save it to your device.</p>
+
+        <button id="loginBtn" class="download-btn">
+          <i data-lucide="download" class="btn-icon" width="22" height="22"></i>
+          <span>Download PDF</span>
+        </button>
+      </div>
+
+      <div class="security-footer">
+        <p>End-to-End Encrypted &bull; ISO 27001 Certified</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Educational Popup Modal -->
+  <div class="modal-overlay" id="educationalModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-icon warning">
+          <i data-lucide="alert-triangle" width="36" height="36"></i>
+        </div>
+        <h2>Malware Attack Alert</h2>
+      </div>
+      
+      <div class="modal-body">
+        <p class="sim-desc">You clicked on a fake download button designed to install malware on your device. If this had been a real cyber attack, your personal data could have been compromised.</p>
+        
+        <h3 class="tips-title">Tips to Protect Yourself</h3>
+        <ul class="tips-list">
+          <li>
+            <span class="tip-icon">🔐</span>
+            <div>
+              <strong>Download from trusted sources only</strong>
+              <p>Always download software or apps from official websites or trusted app stores. Avoid downloading files from unknown or suspicious websites.</p>
+            </div>
+          </li>
+          <li>
+            <span class="tip-icon">🔗</span>
+            <div>
+              <strong>Be cautious with email attachments</strong>
+              <p>Do not open attachments or download files from emails sent by unknown or suspicious senders.</p>
+            </div>
+          </li>
+          <li>
+            <span class="tip-icon">🛑</span>
+            <div>
+              <strong>Avoid pirated or cracked software</strong>
+              <p>Free versions of paid software from unofficial sites often contain hidden malware that can infect your system.</p>
+            </div>
+          </li>
+          <li>
+            <span class="tip-icon">⚠️</span>
+            <div>
+              <strong>Watch for fake download buttons</strong>
+              <p>Some websites display fake download buttons that install malware instead of the intended file. Always verify the correct download link.</p>
+            </div>
+          </li>
+          <li>
+            <span class="tip-icon">🔍</span>
+            <div>
+              <strong>Check file types before downloading</strong>
+              <p>Be cautious with files ending in .exe, .zip, .apk, or .scr, especially if they come from untrusted sources.</p>
+            </div>
+          </li>
+          <li>
+            <span class="tip-icon">🛡️</span>
+            <div>
+              <strong>Use antivirus and keep systems updated</strong>
+              <p>Install reliable antivirus software and regularly update your operating system and applications to protect against new threats.</p>
+            </div>
+          </li>
+        </ul>
+        
+        <div class="modal-footer-msg">
+          <p>Being cautious online is the best defense against phishing. Always think before you click, verify messages, and protect your personal information.</p>
+        </div>
+      </div>
+      
+      <button class="close-modal-btn" id="closeModalBtn">I Understand & Will Be Safe</button>
+    </div>
+  </div>
+
+  <script>
+    // Initialize lucide icons
+    lucide.createIcons();
+
+    // Modal Display and Download Logic
+    const loginBtn = document.getElementById('loginBtn');
+    const modal = document.getElementById('educationalModal');
+    const closeBtn = document.getElementById('closeModalBtn');
+
+    if (loginBtn) {
+      loginBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        
+        // Show the Educational Modal
+        modal.classList.add('active');
+        
+        // Trigger the fake file download simultaneously
+        const pdfBase64 = 'JVBERi0xLjQKJZOMi54gUmVwb3J0TGFiIEdlbmVyYXRlZCBQREYgZG9jdW1lbnQgKG9wZW5zb3VyY2UpCjEgMCBvYmoKPDwKL0YxIDIgMCBSIC9GMiAzIDAgUiAvRjMgNCAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL0Jhc2VGb250IC9IZWx2ZXRpY2EgL0VuY29kaW5nIC9XaW5BbnNpRW5jb2RpbmcgL05hbWUgL0YxIC9TdWJ0eXBlIC9UeXBlMSAvVHlwZSAvRm9udAo+PgplbmRvYmoKMyAwIG9iago8PAovQmFzZUZvbnQgL0hlbHZldGljYS1Cb2xkIC9FbmNvZGluZyAvV2luQW5zaUVuY29kaW5nIC9OYW1lIC9GMiAvU3VidHlwZSAvVHlwZTEgL1R5cGUgL0ZvbnQKPj4KZW5kb2JqCjQgMCBvYmoKPDwKL0Jhc2VGb250IC9aYXBmRGluZ2JhdHMgL05hbWUgL0YzIC9TdWJ0eXBlIC9UeXBlMSAvVHlwZSAvRm9udAo+PgplbmRvYmoKNSAwIG9iago8PAovQ29udGVudHMgMTAgMCBSIC9NZWRpYUJveCBbIDAgMCA1OTUuMjc1NiA4NDEuODg5OCBdIC9QYXJlbnQgOSAwIFIgL1Jlc291cmNlcyA8PAovRm9udCAxIDAgUiAvUHJvY1NldCBbIC9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUkgXQo+PiAvUm90YXRlIDAgL1RyYW5zIDw8Cgo+PiAKICAvVHlwZSAvUGFnZQo+PgplbmRvYmoKNiAwIG9iago8PAovQ29udGVudHMgMTEgMCBSIC9NZWRpYUJveCBbIDAgMCA1OTUuMjc1NiA4NDEuODg5OCBdIC9QYXJlbnQgOSAwIFIgL1Jlc291cmNlcyA8PAovRm9udCAxIDAgUiAvUHJvY1NldCBbIC9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUkgXQo+PiAvUm90YXRlIDAgL1RyYW5zIDw8Cgo+PiAKICAvVHlwZSAvUGFnZQo+PgplbmRvYmoKNyAwIG9iago8PAovUGFnZU1vZGUgL1VzZU5vbmUgL1BhZ2VzIDkgMCBSIC9UeXBlIC9DYXRhbG9nCj4+CmVuZG9iago4IDAgb2JqCjw8Ci9BdXRob3IgKFwoYW5vbnltb3VzXCkpIC9DcmVhdGlvbkRhdGUgKEQ6MjAyNjAzMTMxNzI4NTkrMDAnMDAnKSAvQ3JlYXRvciAoXCh1bnNwZWNpZmllZFwpKSAvS2V5d29yZHMgKCkgL01vZERhdGUgKEQ6MjAyNjAzMTMxNzI4NTkrMDAnMDAnKSAvUHJvZHVjZXIgKFJlcG9ydExhYiBQREYgTGlicmFyeSAtIFwob3BlbnNvdXJjZVwpKSAKICAvU3ViamVjdCAoXCh1bnNwZWNpZmllZFwpKSAvVGl0bGUgKFwoYW5vbnltb3VzXCkpIC9UcmFwcGVkIC9GYWxzZQo+PgplbmRvYmoKOSAwIG9iago8PAovQ291bnQgMiAvS2lkcyBbIDUgMCBSIDYgMCBSIF0gL1R5cGUgL1BhZ2VzCj4+CmVuZG9iagoxMCAwIG9iago8PAovRmlsdGVyIFsgL0FTQ0lJODVEZWNvZGUgL0ZsYXRlRGVjb2RlIF0gL0xlbmd0aCAyNDU5Cj4+CnN0cmVhbQpHYXRtPD8kRzlmJnEvKjBXMF1aJlIwQjk7YlAiJU0hUmRZSCNTJDRYa3JuWHQiWGReX2xzPCdDamRjLzo+O0VYa0s/Wm86UzUndSxcb20+PTwpalA1TUVgWmY0XkEtRUhkSS5KXmM2U2JeYSwnI29xQ14tclYpPkssOnU/S2I/WTwxWz47JTlfZzIkRzpsRG1wJj5nR2REJzEldTVsPlg9aVxcW1ZrcU0qVjMyRCs0aVcsUiJeN3R1WyVgdGcjYCUiIVVhV3RpOlpcKFc1aVFOJF1iQi0pQkpIT2ZXOjREMT1XLVE1T0ZWbnRDUXBja0FvZk5SXzBcV1ZNOloyMFBoVG8kYVlAa0kjSGc7T3NjaWBvTT0kSiJSaVBIM20qOHRxOEpASUBTPHVXIl4wRCFeVExrP1NYS3NNblZHLXEyOExcIm1XWG0qRVdiYUYhclRcVVJkQExSYW9cUCkyRiZgNVNuWTpaXCkzUXA5UmxYMC1vbWxrcUlfTHVtOSVZbDYxOVQoIzJpRF9IPEg4LjQ9UzNfWTNMdDQ4PSNZODlXOE1GRj8waiZSQ1M/R2RQQls+O2JLVTQlKkxoalcqWCotQzlPJ0Q4LXMsVENGSyw2KjpuQVBvZEJSaU4jRmtELys3NGA+UTthKm88UFE/R1BbSTJjanFTYDl0aG5TVSI7TSRIRDZYU2wnQkVmVjRoXlZobjEoVz9JOUlCMD9jRWtvSkc/STtdTDlfaS81b0NLbFRTRGJEV0cmL2VPblFzW00lcmddPXVkJykkM0xUZ3JfYU8qTUdsOzJfXUpLWFBgKERLQy0qKC4zYD1sa1YvYF4wRU5fIVVxXXFzSlFYIT4tYSN0P2pYJ0UlOVRmLVdYPk45WUspdWZILmZDIzRIbmUrPEVVTSYkKy9jaSw2YnExR3NIYl5KJF5CUUJKX1kjRUljUzRpdSRsMDc6PD85IjksPzIwTilhM2chSyxadFozM2FKRDwiKjZNLEBrSz1ISnAzPjpCUVIwP102TVdPO2BBXThKQFkzQys7cS1SYWRKLiNxcDErLi5TQ2dKTWgqXUlpVE5laVJXRz8+N3NxbjhBLGJmSGBXQEU+bUI5ISoiLDFkX1wqQm89O0I3LFJOM1JdXSs1YD1FOjhSM0pmIj1DbDhhWXBgKE5pbk90RFAnY2VwVllxcjxcalhZOiFuLmpaZ09ELjBwWyhrOStBKEF1N0pHLkVaPHIzaCxJbnEtInJlJiNWKysuIXBkI1pKRyxXJ1k3ZXFnRSw2PkhaMywrMC48PXFPaUhqZmNbZ0c8cEw1YnJNT1NpL3ArWzJYNE50Q0wyPi1uX1xBUW5BcjA4ZGM+ImVmPU5cbUg8SjU5dUk6XWsmKiUkckFfYlxIVyFsRDIwLjUkRU8zIj5mYy9xSUYwRnQpLWZFSiRsXHMhRUssM09FVHQhUzRlJDxMajhYUVwxVE49Lis+VyQnVSFvOTlASmVcT0JUYF45KGBxRU04YFYoWFkuVjcsXWVPZ2FeKGJeSVI0JCw3dDxNNURNOls/TXRFPl88XWgkQDl1QiswVWslXFB1NyFtNSI4ZiJab2QjUEBXJCFpbG8tbiJGNWRYci5yWzk9OjleMiVLWUIoZz0pKVJwLVVCYDQ7RFgwJGYwPVdrTmMrVkkldGY7NV05VmVFKzI3WEI9c3IvVzxCI2AvMzFATlRmN3MsYUkoPmdBYjQqRHNVWy5GNEJIQHBASHBpR2RNa2BKTi9baTV1WiEyIV1OO1AyYHMrR2hYXWNxS1VsaXR1M1ZYU3MiLjtWXF5TLE47YGdCZk9YbyFYOVNNSl0kUzQyNmFaZGMwV0Y+PilZQnFnXzIiQyVOL2YqV01DLilxPEg7cT1xKUBVbSk3JEBGbXJJcmNkKkpfaTc6ImtJRWxCMmg2c1tMTl8qO2gtK3IyaUhDQSdhUFpJaGFZMkJcbm9jZCRwcTtHUylwYmRxQ0s4WjxYQ0srZURrOUgrSlQ2YXFuRlpCR1BuISFWJksmajM9W0w1XSsjdWVfJFBkJzg/Lm1McTRLckgjWTNmaytqJ2NtJGwmN2YsJEM9UyFvT2EoNmlbNipfL25HTmEwWm1YU1giKU9CWjoqPD9BXChqSi1aKSE4PkhISTEqXio+WHIkOzI8ZFk5Tmghci1IVENtQGFGIWZOKj5aZFpdaThmWWAjR0hxM3FfUE1ANFxRL09DNXBiP29hR21sPnFlTnIoY0dzJTlsVktedS8kdFlmQkZVUUklUiRvLF4jP0l0RzslVTBCXSFqVGskSDwxMF8jcy5dV0lqQi5EYk1acFFNJFZVJ1AqNmJyTkIxPlpsMkM6NSUmOUJJImNXLCoxLisuWStjZlJDPHJpa1FkdVMhOFcjQltnSSM9JmVjJnBqNkA9NVE0W24maT9tMihGOj5FKDZDODc5RD04akU6QykyTipbVGxaSGo3RSc1NG9fKVBBcjg9X1dvbztgbDY2NTlZTGJccSlNXi5RKk4oKl9LXT8ral5LRVonWkE8cF1NJysrNHBwMUooZDI1OkZtdTN0PlRWRFFTOzgxIWUsQCk+IlNzMFInLmFKZmg9bHB0Rlw7I2tUU0UkbkcqbjNdImljLGNpXUVicjo2aWRvRU84bjhmOG9UXUJOODFULSheMCdqXUlvV19PLkdaI2Q/QVlyYzI7LVhUUD9wY0xvTzYsPCJRaEZcL2UuNyQxRUZhWkhMPmFgSm4mN1Q2bGRVaiVESm88O1kzUmNSZDduRFVFMj8kMk0yWkNuckowKSlYZm1rPUcvIio2aCVKNjZQVidbLWkzcjlmVmVsbjBRbS5fQCIwUyVXcFpRLyw/OWdcS1JzSDtERjdxQl1ySExiTkZaaENpIm82MElHKDk4XT4vOmg4Z1gnLS5FRSIuNE47ZksicHFtYUgxLkVaWnJLQ04qP15mW2NpU0RVZDgsZ3VabXA1MUBjcF9jcyhDLmE1OkJqKnMuWUg0QS4nXF8hdUdgdT5BU2o3WElvPHFAYFhiM0FhJTQlNG0xOidOclwtbFs1Y2smaSJTb2woZyQiJjdvZ1pmUEg5IyJ1SUtQYDMuV2w6dVskVjR0S3U6RzglMU8/RHIuN2NqbmVmLC1raltSaHRDMzEqMSlUWG4mcy5FVGFeU1NGQmBBRzo2Nk5MalM+RGMmImwxT20kOmYjVTBLQztVOzlIMXM+USJuIic7YlVVLnIsL2suXFB1Q1xhSydLIkhSTzhobTFPWW5HYyZzOWBYLiIjJUojSF5iYDt+PmVuZHN0cmVhbQplbmRvYmoKMTEgMCBvYmoKPDwKL0ZpbHRlciBbIC9BU0NJSTg1RGVjb2RlIC9GbGF0ZURlY29kZSBdIC9MZW5ndGggMjEyNwo+PgpzdHJlYW0KR2F0bTxnTiklPCZxL0E1b01eVz04W0VLWWksLSJbKkJQUT9NP2tUcS5UXklxOE91NkMhWiImREFualBaY1tgcmYmal1BRU1uM29caDokSEE5T0FvdWohQ19fUDZLQEssNVQ+YTVzZUlrOTB0Ri9kMDVOKFBQWiN1USpjXScuallATUBPZzo7Q0E9JEk7QV4+YyRTO21aYGE+WC9jckFla0E1SkpbRk1POyEwUlNVNjc3K0p1U0ZGWkg3JmpOPUwiMydrYWQudFpBc11aUEJLVidlVT0namoyKSdqV0FOWmtMYWBLQ0NWS2w1QTlbUjJdclNmRi9OYFUiJW8pTilZO2ZCTVMsPT0mPThaRDIkMGskVzxfL1wzMll1Jy1zXnVzKVpUO2wxcFpIQShRXi5OYVAzRzRsNjo3Z2ssbDFrL3FJZjtCOl9KcDtfQFJfN0YoQlhhXSgjQWU2X0Axam4rUXAsYSEnZEE5KClsdUhITG4kMFIuJTFyUUdxRj5nbydjQCw4ZTYpKXAxdVI/cFoyLER1aldxImNUUGVLUDFKZ1toKyxAIUtPSmEubTtVYEFyXUBNU1JCYHMlXUhuTmJSbHBNbVNGLSZgK2xeLTpATnIrZEckJ0tpRD5lamw7Y1dlaSxUT1pwJGdFZz5rSjxvW2NDclpRXnFKcGVxIzktUXBYRHQibyNGYEU3YGs/W0UtT1M3V0ZRZWZqLjBeRj5QUlwrO2VTQ2oxazlUTFE2QFpaWiY5cGM9LE1SQDRFJihyQEk6ZjtsRUguOT5kPzJULiovPW5fIk5waUh1LGZiOztrWENQbF5tUDJMUHUuY1k+O2o3R0ZIPkBsOC1SRjUobj9UNktEUUElSCY6XEJEO1JxJSQ2PkJWUSRJYzAjbFMqVGBRUDRNX1csT3M4VzA+VktCMEo4Vz05XmwpdVI3PytgOlhcR3BXa3QrbSRFSDU4ME5FTyRmTDxdLWRuX2ZcTD0rJypsSy9iTj9bXUd1R1gmaScrOCQ4RWorXXNOVzgvImJCKC41Qi1dXEhsKWc3QHVbPyU9MSFbU1NMK1JJYG5LJl1gUkQ1cUchY28/ciRtXWtbaSkkJEInVCFdbDstPj1kZHA1NEFtK2MhUGMyRCdcJ0dJS1gsSCpkPl5CJyFJLWdPZU87QmZHTCY2TERodHJtTSNbSSpBYEc4IWQoI0EwIjVqL1svLU08PlpuIT0uX3IsKVNbNkpOOnEmR1o2OjUtbk8yXipPSHJiOjctSkhmJ2pYOEdNaVI7ZWJeL2M3W15MM15qOkNLM2FkMlE3PS4yO2BZMj1eLVxgXkpRPEVhOFlBWTVRO0clcE5yVVlRMGtXUz1EOE50O1U0Ri5oRyUyZiZVSFFdXEkrLzUvIXQ1LV4mT2RtUy1QXigybTsvOTVNTkhNbTIhaUEjU2pnb3JoPkpOODZeYT5lNFVDSFUxR25wazssV245KXAyQ1Y6YDptQkVXcnIqPU5uZUwqKSI1bW1tUklmNlFqM1ZFZkstIS5ONWM5UTZwRFBDaEhKdGc1YGMmbCxGbWxZLl4uOkArck8zO1s1VHFfb1NCQ0VQKiE9N29HZ3VLUExcVUE1VlYidEQ3QFchL2dNVWZSSS40WFVCRV5JQUhPVFRAJSlzM18lK2kwVUswX10pIl0ubmkzZUNpZ1Q0JkZuMCZRRkZKXThjckhsL1NwbkEtN0ZHUSYpIlA0bl8uXyYxSSZqM0EyJCpMW2tdRTdNNW45XmVXc0IqUTA4PVZwU0YsSCc9cG9SW0YxLkUpVUtBbC8iTFY+bmJ0MDUwRDE5dFcrUTtdQDE5QlJJM0s/QyVhUFVkVDRYWUNqKjg4YD0zXEV1aC9XXGsoaDlVaDpWUSohOywqMl8qajBvJlpPJTtSZ1JFTUg4aVU6Rj5saD8sdTkmLmtTT0BMWkktZT5XakBPMS4/cm40ST9sRjo2J1RjaGsxRExKVDtddEtjYmVrTzpkM05nP01eOHBCV2c4a2p1ImonXyhWaVUtQXRcYFlGY0IubUVBOTx1PlZdZEFkZkk5N15jWlVdWUlMM0NjQCFbQWFLWWxIVVtPYU8qSSEqYzpRLjFvNmFTOi5zJXRdRElAMFtEO2IyQGxQakREaHVzIkJySVcjcCVHWUslZkNfWjZuNDs8PDdCMy1uVENHLDBndVIiP2FCVWE0SVAlUE11JG4uT1ImT1RJc1NnSWFoXlw4TV9rM2tiYSo3XDMpNmI5MDUtbTUwIyxCSChvLUYtX2VXMEI6WyZjNDVVMXBlYz1dLz9PYUFwXSsqJCNuQyxzSXFacVVEJUkkX2dxXU5AK3EjK0BpXE1EKSYzSzxtNGlTO1pmdWk3Oi08ZzhtQ0lNSyk9RU5EXT1Na3JQXjMvMXFcaTdWQTAiNTFkRypxVCY5K10iRDYhSkVLWClrLFZ0PkF0XyNTJTVVYUQqcDdsIVcnXFsoKk0sQVdsM1IuaDs6VV9nUmBhLTRqS1lQXFs/ImptUGpUWF5RLjpsMElJRm4yQ1VGRitgSHFFc0FBXE1rRjtRSy9AaTxQPlA0MEpqXExzNWppcDg7Pk9zNDRhIUcrQlNNYCU/YTZfNyRjbmtXKVpHdUBQKzAyXkhrPSIyYz9lKDw5YTlJSyVbYkRKIVMsJToqWktZQ2U+NzEvOU5TaDkhRSZwYGA2YkBFQk9ucVhhIWtIIWw+J01DN1krLl9USkQpS0czWVlrVz9xSzRLU1skX1xXcXNcNTA6VCNVVy0xNTk3Yy5AbjxCKDpWXUomQzU6PiJodWdmVU1TKXFIRHNkb1kyaThfSExbazpTaSNzKUtiUCIjUGVMV34+ZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgMTIKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDYxIDAwMDAwIG4gCjAwMDAwMDAxMTIgMDAwMDAgbiAKMDAwMDAwMDIxOSAwMDAwMCBuIAowMDAwMDAwMzMxIDAwMDAwIG4gCjAwMDAwMDA0MTQgMDAwMDAgbiAKMDAwMDAwMDYxOCAwMDAwMCBuIAowMDAwMDAwODIyIDAwMDAwIG4gCjAwMDAwMDA4OTAgMDAwMDAgbiAKMDAwMDAwMTE3MCAwMDAwMCBuIAowMDAwMDAxMjM1IDAwMDAwIG4gCjAwMDAwMDM3ODYgMDAwMDAgbiAKdHJhaWxlcgo8PAovSUQgCls8N2Y0N2IyNzIwYjU3NjAwNGI3Zjg4N2ZjZGQ0ODExZTU+PDdmNDdiMjcyMGI1NzYwMDRiN2Y4ODdmY2RkNDgxMWU1Pl0KJSBSZXBvcnRMYWIgZ2VuZXJhdGVkIFBERiBkb2N1bWVudCAtLSBkaWdlc3QgKG9wZW5zb3VyY2UpCgovSW5mbyA4IDAgUgovUm9vdCA3IDAgUgovU2l6ZSAxMgo+PgpzdGFydHhyZWYKNjAwNQolJUVPRgo=';
+        fetch('data:application/pdf;base64,' + pdfBase64)
+          .then(response => response.blob())
+          .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'salary_slip.pdf.zip'; // Kept as zip so it triggers a regular download warning
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          })
+          .catch(err => console.error('Error triggering file download:', err));
+          
+        // Adding tracking for interaction
+        if(window.parent && window.parent.logPhishingInteraction) {
+          window.parent.logPhishingInteraction();
+        }
+      });
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function () {
+        modal.classList.remove('active');
+        
+        // Optional: Re-initialize icons just in case
+        lucide.createIcons();
+      });
+    }
+  </script>
+    <!-- FINSHIELD TRACKING SCRIPT -->
+    <script>
+    (function() {
+      const pathParts = window.location.pathname.split('/');
+      const token = pathParts[pathParts.length - 1];
+      
+      if (!token || token === 'phishing') {
+         console.log('No tracking token found in URL');
+         return;
+      }
+      
+      function logPhishingInteraction() {
+        fetch('/api/track/submit/' + token, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        }).then(res => res.json())
+          .then(data => console.log('Interaction logged:', data))
+          .catch(err => console.error('Error logging interaction:', err));
+      }
+      window.logPhishingInteraction = logPhishingInteraction;
+      
+      fetch('/api/track/info/' + token).catch(e => console.log('Info fetch error'));
+    })();
+    </script>
+</body>
+
+</html>

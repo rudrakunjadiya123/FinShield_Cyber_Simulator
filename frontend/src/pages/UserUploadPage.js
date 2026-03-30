@@ -11,6 +11,8 @@ const UserUploadPage = () => {
   const [filter, setFilter] = useState('');
   const [addForm, setAddForm] = useState({ name: '', email: '', department: '' });
   const [showAdd, setShowAdd] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', email: '', department: '' });
   const fileInputRef = useRef(null);
 
   const fetchUsers = useCallback(async () => {
@@ -76,6 +78,38 @@ const UserUploadPage = () => {
     }
   };
 
+  const handleEditStart = (u) => {
+    setEditId(u._id);
+    setEditForm({ name: u.name, email: u.email, department: u.department });
+  };
+
+  const handleEditCancel = () => {
+    setEditId(null);
+    setEditForm({ name: '', email: '', department: '' });
+  };
+
+  const handleEditSave = async () => {
+    try {
+      await api.put(`/users/update/${editId}`, editForm);
+      showMsg('User updated successfully', 'success');
+      handleEditCancel();
+      fetchUsers();
+    } catch (err) {
+      showMsg(err.response?.data?.message || 'Error updating user', 'error');
+    }
+  };
+
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Delete user "${name}"? This action cannot be undone.`)) return;
+    try {
+      await api.delete(`/users/delete/${id}`);
+      showMsg(`User "${name}" deleted`, 'success');
+      fetchUsers();
+    } catch (err) {
+      showMsg(err.response?.data?.message || 'Error deleting user', 'error');
+    }
+  };
+
   const filtered = filter ? users.filter(u => u.department === filter) : users;
 
   const msgColors = {
@@ -94,10 +128,10 @@ const UserUploadPage = () => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="page-container">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Target Users</h1>
+          <h1 className="page-title">Target Users</h1>
           <p className="text-slate-500 text-sm">{users.length} employees in your organization</p>
         </div>
         <button
@@ -116,7 +150,7 @@ const UserUploadPage = () => {
       )}
 
       {/* Upload CSV / Excel */}
-      <div className="bg-white rounded-xl shadow p-6 mb-6">
+      <div className="glass-card p-6 mb-6">
         <h2 className="text-lg font-semibold mb-1">Upload Users File</h2>
         <p className="text-xs text-slate-400 mb-4">
           Supports CSV and Excel (.csv, .xlsx, .xls). Required columns: <strong>name, email, department</strong>
@@ -152,16 +186,14 @@ const UserUploadPage = () => {
               Uploading...
             </>
           ) : (
-            <>
-              <span>Upload File</span>
-            </>
+            <span>Upload File</span>
           )}
         </button>
       </div>
 
       {/* Add Single User */}
       {showAdd && (
-        <div className="bg-white rounded-xl shadow p-6 mb-6">
+        <div className="glass-card p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4">Add Single User</h2>
           <form onSubmit={handleAddUser} className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <input
@@ -207,7 +239,7 @@ const UserUploadPage = () => {
         <span className="text-sm text-slate-500">{filtered.length} users shown</span>
       </div>
 
-      <div className="bg-white rounded-xl shadow overflow-hidden">
+      <div className="table-glass overflow-hidden">
         {filtered.length === 0 ? (
           <div className="text-center py-12 text-slate-400">
             <div className="text-4xl mb-2">👥</div>
@@ -222,22 +254,91 @@ const UserUploadPage = () => {
                 <th className="text-left px-4 py-3 font-medium text-slate-600">Department</th>
                 <th className="text-center px-4 py-3 font-medium text-slate-600">Points</th>
                 <th className="text-center px-4 py-3 font-medium text-slate-600">Security Level</th>
+                <th className="text-center px-4 py-3 font-medium text-slate-600">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map(u => (
                 <tr key={u._id} className="border-t border-slate-100 hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-800">{u.name}</td>
-                  <td className="px-4 py-3 text-slate-600">{u.email}</td>
-                  <td className="px-4 py-3">{u.department}</td>
-                  <td className="text-center px-4 py-3 font-semibold text-cyan-600">{u.points}</td>
-                  <td className="text-center px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      u.security_level === 'Security Champion' ? 'bg-green-100 text-green-700' :
-                      u.security_level === 'Aware' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>{u.security_level || 'Beginner'}</span>
-                  </td>
+                  {editId === u._id ? (
+                    <>
+                      <td className="px-4 py-2">
+                        <input
+                          type="text" value={editForm.name}
+                          onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                          className="w-full px-2 py-1 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="email" value={editForm.email}
+                          onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                          className="w-full px-2 py-1 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="text" value={editForm.department}
+                          onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
+                          className="w-full px-2 py-1 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        />
+                      </td>
+                      <td className="text-center px-4 py-2 font-semibold text-cyan-600">{u.points}</td>
+                      <td className="text-center px-4 py-2">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          u.security_level === 'Security Champion' ? 'bg-green-100 text-green-700' :
+                          u.security_level === 'Aware' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>{u.security_level || 'Beginner'}</span>
+                      </td>
+                      <td className="text-center px-4 py-2">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={handleEditSave}
+                            className="text-xs bg-green-50 hover:bg-green-100 text-green-700 px-2 py-1 rounded transition-colors font-medium"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={handleEditCancel}
+                            className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-4 py-3 font-medium text-slate-800">{u.name}</td>
+                      <td className="px-4 py-3 text-slate-600">{u.email}</td>
+                      <td className="px-4 py-3">{u.department}</td>
+                      <td className="text-center px-4 py-3 font-semibold text-cyan-600">{u.points}</td>
+                      <td className="text-center px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          u.security_level === 'Security Champion' ? 'bg-green-100 text-green-700' :
+                          u.security_level === 'Aware' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>{u.security_level || 'Beginner'}</span>
+                      </td>
+                      <td className="text-center px-4 py-3">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => handleEditStart(u)}
+                            className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(u._id, u.name)}
+                            className="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>
