@@ -20,7 +20,7 @@ router.get('/leaderboard', auth, authorize('admin', 'cybersecurity', 'analyst'),
     }
 
     const users = await User.find(filter)
-      .select('name email department points security_level')
+      .select('name email department points employee_id')
       .limit(limit);
 
     // Compute security_score from InteractionLog for each user (same formula as analytics)
@@ -61,7 +61,7 @@ router.get('/leaderboard', auth, authorize('admin', 'cybersecurity', 'analyst'),
       email: u.email,
       department: u.department,
       points: u.points || 0,
-      security_level: u.security_level,
+      employee_id: u.employee_id,
       security_score: statsMap[u._id.toString()] ?? 100
     })).sort((a, b) => b.security_score - a.security_score);
 
@@ -97,7 +97,7 @@ router.get('/employee/:id', auth, authorize('admin', 'cybersecurity', 'analyst')
       .sort({ createdAt: -1 });
 
     const totalAttempts = logs.length;
-    const emailsOpened = logs.filter(l => l.email_opened).length;
+
     const linksClicked = logs.filter(l => l.link_clicked).length;
     const emailsReported = logs.filter(l => l.reported_email).length;
     const formsSubmitted = logs.filter(l => l.form_submitted).length;
@@ -233,7 +233,7 @@ router.get('/employee/:id', auth, authorize('admin', 'cybersecurity', 'analyst')
       campaign: log.campaign_id?.name || 'Unknown',
       campaign_status: log.campaign_id?.status || 'unknown',
       date: log.createdAt,
-      email_opened: log.email_opened,
+
       link_clicked: log.link_clicked,
       reported: log.reported_email,
       form_submitted: log.form_submitted,
@@ -247,11 +247,11 @@ router.get('/employee/:id', auth, authorize('admin', 'cybersecurity', 'analyst')
         email: user.email,
         department: user.department,
         points: user.points,
-        security_level: user.security_level
+
       },
       stats: {
         total_attempts: totalAttempts,
-        emails_opened: emailsOpened,
+
         links_clicked: linksClicked,
         emails_reported: emailsReported,
         forms_submitted: formsSubmitted,

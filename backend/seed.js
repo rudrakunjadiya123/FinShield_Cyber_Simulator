@@ -8,8 +8,6 @@ const InteractionLog = require('./models/InteractionLog');
 const EmailDeliveryLog = require('./models/EmailDeliveryLog');
 const AuditLog = require('./models/AuditLog');
 const Report = require('./models/Report');
-const Quiz = require('./models/Quiz');
-const QuizAttempt = require('./models/QuizAttempt');
 const fs = require('fs');
 const path = require('path');
 
@@ -75,9 +73,7 @@ const seedDB = async () => {
     InteractionLog.deleteMany({}),
     EmailDeliveryLog.deleteMany({}),
     AuditLog.deleteMany({}),
-    Report.deleteMany({}),
-    Quiz.deleteMany({}),
-    QuizAttempt.deleteMany({})
+    Report.deleteMany({})
   ]);
   console.log('Cleared all existing data');
 

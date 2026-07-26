@@ -63,7 +63,7 @@ router.post('/register', async (req, res) => {
           organization_name: organization.name,
           organization_code: organization.code,
           points: user.points,
-          security_level: user.security_level
+  
         }
       });
 
@@ -105,7 +105,7 @@ router.post('/register', async (req, res) => {
             organization_name: organization.name,
             organization_code: organization.code,
             points: existingUser.points,
-            security_level: existingUser.security_level
+
           }
         });
 
@@ -143,7 +143,7 @@ router.post('/register', async (req, res) => {
             organization_name: organization.name,
             organization_code: organization.code,
             points: user.points,
-            security_level: user.security_level
+    
           }
         });
       }
@@ -180,7 +180,7 @@ router.post('/login', async (req, res) => {
         organization_name: user.organization_id?.name,
         organization_code: user.organization_id?.code,
         points: user.points,
-        security_level: user.security_level
+
       }
     });
   } catch (error) {
@@ -207,12 +207,22 @@ router.get('/organizations', async (req, res) => {
 // PUT /api/auth/profile - update current user profile
 router.put('/profile', auth, async (req, res) => {
   try {
-    const { name, password } = req.body;
+    const { name, currentPassword, newPassword } = req.body;
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: 'User not found' });
     
     if (name) user.name = name;
-    if (password) user.password = password; // bcrypt pre-save hash applies
+    
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: 'Current password is required to set a new password' });
+      }
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Incorrect current password' });
+      }
+      user.password = newPassword; // bcrypt pre-save hash applies
+    }
     
     await user.save();
     await user.populate('organization_id', 'name code');
@@ -229,7 +239,7 @@ router.put('/profile', auth, async (req, res) => {
         organization_name: user.organization_id?.name,
         organization_code: user.organization_id?.code,
         points: user.points,
-        security_level: user.security_level
+
       }
     });
   } catch (error) {

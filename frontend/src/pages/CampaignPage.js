@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import MultiSelectDropdown from '../components/MultiSelectDropdown';
+import { Search } from 'lucide-react';
 
 const CampaignPage = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [users, setUsers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -135,12 +137,23 @@ const CampaignPage = () => {
   };
 
 
+  const filteredCampaigns = campaigns.filter(c => {
+    if (!searchQuery) return true;
+    const lowerQuery = searchQuery.toLowerCase();
+    const campNameMatch = c.name?.toLowerCase().includes(lowerQuery);
+    const tempNameMatch = c.template_id?.template_name?.toLowerCase().includes(lowerQuery);
+    return campNameMatch || tempNameMatch;
+  });
+
   if (loading) return <div className="flex items-center justify-center h-64"><p>Loading...</p></div>;
 
   return (
     <div className="page-container">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="page-title">Campaigns</h1>
+        <div>
+          <h1 className="page-title">Campaigns</h1>
+          <p className="text-sm text-slate-500">Manage and monitor your active security training simulations.</p>
+        </div>
         <button
           onClick={() => {
             if (showForm) {
@@ -149,10 +162,23 @@ const CampaignPage = () => {
             }
             setShowForm(!showForm);
           }}
-          className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
         >
           {showForm ? 'Cancel' : '+ New Campaign'}
         </button>
+      </div>
+
+      <div className="flex items-center justify-end mb-6">
+        <div className="relative">
+           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+           <input
+             type="text"
+             placeholder="Search by campaign or template name..."
+             value={searchQuery}
+             onChange={(e) => setSearchQuery(e.target.value)}
+             className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 w-80 text-slate-600"
+           />
+        </div>
       </div>
 
       {message && (
@@ -278,7 +304,7 @@ const CampaignPage = () => {
                 required
               />
             </div>
-            <button type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-lg font-medium">
+            <button type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-lg font-medium text-sm transition-colors">
               {editId ? 'Update Campaign' : 'Create Campaign'}
             </button>
           </form>
@@ -299,11 +325,11 @@ const CampaignPage = () => {
             </tr>
           </thead>
           <tbody>
-            {campaigns.length === 0 ? (
-              <tr><td colSpan="6" className="px-4 py-8 text-center text-slate-400">No campaigns yet</td></tr>
+            {filteredCampaigns.length === 0 ? (
+              <tr><td colSpan="6" className="px-4 py-8 text-center text-slate-400">No campaigns found</td></tr>
             ) : (
-              campaigns.map(c => (
-                <tr key={c._id} className="border-t border-slate-100">
+              filteredCampaigns.map(c => (
+                <tr key={c._id} className="border-t border-slate-100 hover:bg-slate-50">
                   <td className="px-4 py-3 font-medium">
                     {c.name}
                   </td>
@@ -368,6 +394,14 @@ const CampaignPage = () => {
             )}
           </tbody>
         </table>
+        {/* Pagination Footer Placeholder */}
+        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 text-xs text-slate-500 flex justify-between items-center">
+           <span>Showing {filteredCampaigns.length} of {campaigns.length} campaigns</span>
+           <div className="flex gap-2">
+             <button className="px-2 py-1 hover:text-slate-700 disabled:opacity-50" disabled>&lt;</button>
+             <button className="px-2 py-1 hover:text-slate-700 disabled:opacity-50" disabled>&gt;</button>
+           </div>
+        </div>
       </div>
     </div>
   );

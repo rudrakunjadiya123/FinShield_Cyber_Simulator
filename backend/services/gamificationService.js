@@ -22,7 +22,7 @@ const getLeaderboard = async (limit = 20, organizationId = null) => {
   const filter = { role: 'employee' };
   if (organizationId) filter.organization_id = organizationId;
   return User.find(filter)
-    .select('name email department points security_level')
+    .select('name email department points employee_id')
     .sort({ points: -1 })
     .limit(limit);
 };

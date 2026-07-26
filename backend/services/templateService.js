@@ -1,16 +1,7 @@
-const fs = require('fs');
-const path = require('path');
 const Template = require('../models/Template');
+const { html1, html2, html3, html4 } = require('./defaultTemplates');
 
 const injectDefaultTemplates = async (orgId, userId) => {
-  const templatesDir = path.join(__dirname, '..', 'templates');
-  
-  // Safely read template HTML files
-  let html1 = '', html2 = '', html3 = '', html4 = '';
-  try { html1 = fs.readFileSync(path.join(templatesDir, 'Registration_QR.html'), 'utf8'); } catch(e) { console.error('Warning: Registration_QR.html not found'); }
-  try { html2 = fs.readFileSync(path.join(templatesDir, 'Github_Fake_Login.html'), 'utf8'); } catch(e) { console.error('Warning: Github_Fake_Login.html not found'); }
-  try { html3 = fs.readFileSync(path.join(templatesDir, 'Product_Fake_Index.html'), 'utf8'); } catch(e) { console.error('Warning: Product_Fake_Index.html not found'); }
-  try { html4 = fs.readFileSync(path.join(templatesDir, 'Salary_Slip_Fake.html'), 'utf8'); } catch(e) { console.error('Warning: Salary_Slip_Fake.html not found'); }
 
   const predefinedTemplates = [
     {

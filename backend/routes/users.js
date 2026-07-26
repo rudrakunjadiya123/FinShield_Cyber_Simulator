@@ -8,6 +8,12 @@ const User = require('../models/User');
 const Organization = require('../models/Organization');
 const { auth, authorize } = require('../middleware/auth');
 const { logAudit } = require('../services/auditService');
+const { sendWelcomeEmail } = require('../services/emailService');
+const crypto = require('crypto');
+
+const generateRandomPassword = () => {
+  return crypto.randomBytes(6).toString('hex'); // 12 character hex string
+};
 
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
@@ -47,7 +53,6 @@ router.post('/upload', auth, authorize('admin'), upload.single('file'), async (r
     const orgId = req.user.organization_id;
     const users = [];
     const errors = [];
-    const defaultPassword = 'FinShield@2024';
     const ext = path.extname(req.file.originalname).toLowerCase();
 
     // Parse file based on extension
@@ -63,13 +68,15 @@ router.post('/upload', auth, authorize('admin'), upload.single('file'), async (r
         const name = row.name || row.Name || row.NAME || row['Full Name'] || row['full name'] || '';
         const email = row.email || row.Email || row.EMAIL || row['Email ID'] || row['email id'] || row['Email Id'] || row['email Id'] || '';
         const department = row.department || row.Department || row.DEPARTMENT || row.dept || row.Dept || '';
+        const employee_id = row.employee_id || row['Employee ID'] || row.id || row.ID || row.Id || '';
 
-        if (name.toString().trim() && email.toString().trim() && department.toString().trim()) {
+        if (name.toString().trim() && email.toString().trim() && department.toString().trim() && employee_id.toString().trim()) {
           users.push({
             name: name.toString().trim(),
             email: email.toString().trim().toLowerCase(),
             department: department.toString().trim(),
-            password: defaultPassword,
+            employee_id: employee_id.toString().trim(),
+            password: generateRandomPassword(),
             role: 'employee',
             organization_id: orgId
           });
@@ -86,13 +93,15 @@ router.post('/upload', auth, authorize('admin'), upload.single('file'), async (r
             const name = row.name || row.Name || row.NAME || '';
             const email = row.email || row.Email || row.EMAIL || '';
             const department = row.department || row.Department || row.DEPARTMENT || '';
+            const employee_id = row.employee_id || row['Employee ID'] || row.id || row.ID || row.Id || '';
 
-            if (name.trim() && email.trim() && department.trim()) {
+            if (name.trim() && email.trim() && department.trim() && employee_id.trim()) {
               users.push({
                 name: name.trim(),
                 email: email.trim().toLowerCase(),
                 department: department.trim(),
-                password: defaultPassword,
+                employee_id: employee_id.trim(),
+                password: generateRandomPassword(),
                 role: 'employee',
                 organization_id: orgId
               });
@@ -125,6 +134,8 @@ router.post('/upload', auth, authorize('admin'), upload.single('file'), async (r
           }
         } else {
           await User.create(userData);
+          // Send welcome email with generated password
+          sendWelcomeEmail(userData.email, userData.name, userData.password).catch(console.error);
           results.created++;
           newDepts.add(userData.department);
         }
@@ -156,20 +167,37 @@ router.post('/upload', auth, authorize('admin'), upload.single('file'), async (r
 // POST /api/users/add - add single target user to same org
 router.post('/add', auth, authorize('admin'), async (req, res) => {
   try {
-    const { name, email, department } = req.body;
+    const { name, email, department, role, employee_id } = req.body;
     const orgId = req.user.organization_id;
     const existing = await User.findOne({ email });
     if (existing) {
-      return res.status(400).json({ message: 'User with this email already exists' });
+      if (existing.organization_id.toString() === orgId.toString()) {
+        return res.status(400).json({ message: 'User already exists in your organization' });
+      } else {
+        return res.status(400).json({ message: 'Email is already registered in the system' });
+      }
     }
+    
+    if (employee_id) {
+       const idExists = await User.findOne({ employee_id });
+       if (idExists) return res.status(400).json({ message: 'Employee ID is already in use' });
+    }
+    
+    const assignedRole = role || 'employee';
+    const generatedPassword = generateRandomPassword();
+    
     const user = await User.create({
       name,
       email,
       department,
-      password: 'FinShield@2024',
-      role: 'employee',
+      employee_id,
+      password: generatedPassword,
+      role: assignedRole,
       organization_id: orgId
     });
+
+    // Send welcome email asynchronously
+    sendWelcomeEmail(email, name, generatedPassword).catch(console.error);
 
     // Add department to org if new
     const org = await Organization.findById(orgId);
@@ -188,7 +216,7 @@ router.post('/add', auth, authorize('admin'), async (req, res) => {
 // PUT /api/users/update/:id - edit an employee user
 router.put('/update/:id', auth, authorize('admin'), async (req, res) => {
   try {
-    const { name, email, department } = req.body;
+    const { name, email, department, employee_id } = req.body;
     const orgId = req.user.organization_id;
     const user = await User.findOne({ _id: req.params.id, organization_id: orgId });
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -199,10 +227,16 @@ router.put('/update/:id', auth, authorize('admin'), async (req, res) => {
       const emailExists = await User.findOne({ email });
       if (emailExists) return res.status(400).json({ message: 'Email already in use' });
     }
+    
+    if (employee_id && employee_id !== user.employee_id) {
+       const idExists = await User.findOne({ employee_id });
+       if (idExists) return res.status(400).json({ message: 'Employee ID already in use' });
+    }
 
     if (name) user.name = name;
     if (email) user.email = email;
     if (department) user.department = department;
+    if (employee_id) user.employee_id = employee_id;
     await user.save();
 
     await logAudit(req.user._id, 'update', 'user', user._id, `Updated user: ${user.name}`, orgId);

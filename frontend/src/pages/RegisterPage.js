@@ -4,8 +4,8 @@ import api from '../services/api';
 import { Shield, Building2, Users, ArrowLeft, ArrowRight, Loader2, Lock, Check, X, Copy, CheckCircle, Eye, EyeOff } from 'lucide-react';
 
 const RegisterPage = () => {
-  const [step, setStep] = useState(1);
-  const [orgAction, setOrgAction] = useState('');
+  const [step, setStep] = useState(2);
+  const orgAction = 'create';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successData, setSuccessData] = useState(null);
@@ -20,13 +20,6 @@ const RegisterPage = () => {
 
   const updateForm = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
-  const handleActionSelect = (action) => {
-    setOrgAction(action);
-    setForm(prev => ({ ...prev, role: action === 'create' ? 'admin' : 'employee' }));
-    setStep(2);
-    setError('');
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -34,11 +27,19 @@ const RegisterPage = () => {
     if (form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
     setLoading(true);
     try {
-      const payload = { name: form.name, email: form.email, password: form.password, department: form.department || 'General', role: form.role, orgAction };
-      if (orgAction === 'create') { payload.orgName = form.orgName; payload.orgIndustry = form.orgIndustry; payload.orgSize = form.orgSize; }
-      else { payload.orgCode = form.orgCode; }
+      const payload = { 
+        name: form.name, 
+        email: form.email, 
+        password: form.password, 
+        department: form.department || 'General', 
+        role: 'admin', 
+        orgAction: 'create',
+        orgName: form.orgName, 
+        orgIndustry: form.orgIndustry, 
+        orgSize: form.orgSize 
+      };
       const res = await api.post('/auth/register', payload);
-      setSuccessData({ user: res.data.user, orgName: res.data.user.organization_name, orgCode: res.data.user.organization_code, isNewOrg: orgAction === 'create' });
+      setSuccessData({ user: res.data.user, orgName: res.data.user.organization_name, orgCode: res.data.user.organization_code, isNewOrg: true });
       setStep(3);
     } catch (err) { setError(err.response?.data?.message || 'Registration failed'); }
     finally { setLoading(false); }
@@ -100,21 +101,7 @@ const RegisterPage = () => {
         <div className="animate-fade-in-up rounded-2xl p-8 border border-white/10"
           style={{ background: 'rgba(255, 255, 255, 0.06)', backdropFilter: 'blur(24px)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
 
-          {/* Step Indicator */}
-          {step < 3 && (
-            <div className="flex items-center justify-center gap-3 mb-6">
-              {[1, 2].map(s => (
-                <React.Fragment key={s}>
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all ${
-                    step >= s ? 'text-white shadow-lg' : 'bg-white/5 text-slate-500 border border-white/10'
-                  }`} style={step >= s ? { background: 'linear-gradient(135deg, #0891b2, #6366f1)' } : {}}>
-                    {s}
-                  </div>
-                  {s < 2 && <div className={`w-12 h-0.5 rounded-full transition-all ${step >= 2 ? 'bg-cyan-500' : 'bg-white/10'}`} />}
-                </React.Fragment>
-              ))}
-            </div>
-          )}
+
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-300 px-4 py-3 rounded-xl mb-5 text-sm flex items-center gap-2">
@@ -123,103 +110,41 @@ const RegisterPage = () => {
             </div>
           )}
 
-          {/* ========== STEP 1 ========== */}
-          {step === 1 && (
-            <div>
-              <h2 className="text-xl font-semibold text-white mb-1">Get Started</h2>
-              <p className="text-slate-400 text-sm mb-6">Choose how you want to set up your account</p>
-
-              <div className="space-y-3">
-                <button onClick={() => handleActionSelect('create')}
-                  className="w-full p-4 border border-white/10 rounded-xl hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all text-left group"
-                  style={{ background: 'rgba(255,255,255,0.03)' }}>
-                  <div className="flex items-center">
-                    <div className="w-11 h-11 rounded-xl flex items-center justify-center mr-3.5 transition-colors"
-                      style={{ background: 'rgba(8, 145, 178, 0.15)' }}>
-                      <Building2 className="w-5 h-5 text-cyan-400" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-white text-sm">Create New Organization</h3>
-                      <p className="text-xs text-slate-400">You'll be the Admin of your organization</p>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all" />
-                  </div>
-                </button>
-
-                <button onClick={() => handleActionSelect('join')}
-                  className="w-full p-4 border border-white/10 rounded-xl hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all text-left group"
-                  style={{ background: 'rgba(255,255,255,0.03)' }}>
-                  <div className="flex items-center">
-                    <div className="w-11 h-11 rounded-xl flex items-center justify-center mr-3.5 transition-colors"
-                      style={{ background: 'rgba(99, 102, 241, 0.15)' }}>
-                      <Users className="w-5 h-5 text-indigo-400" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-white text-sm">Join Existing Organization</h3>
-                      <p className="text-xs text-slate-400">Enter your organization code to join</p>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all" />
-                  </div>
-                </button>
-              </div>
-
-              <div className="mt-6 text-center">
-                <p className="text-sm text-slate-400">
-                  Already have an account?{' '}
-                  <Link to="/login" className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors">Sign In</Link>
-                </p>
-              </div>
-            </div>
-          )}
-
           {/* ========== STEP 2 ========== */}
           {step === 2 && (
             <form onSubmit={handleSubmit}>
-              <button type="button" onClick={() => { setStep(1); setError(''); }}
-                className="flex items-center text-sm text-slate-400 hover:text-cyan-400 mb-4 transition-colors">
-                <ArrowLeft className="w-4 h-4 mr-1" /> Back
-              </button>
+
 
               <h2 className="text-xl font-semibold text-white mb-1">
-                {orgAction === 'create' ? 'Create Organization' : 'Join Organization'}
+                Create Organization
               </h2>
               <p className="text-slate-400 text-sm mb-5">
-                {orgAction === 'create' ? 'Set up your organization and admin account' : 'Enter your details to join'}
+                Set up your organization and admin account
               </p>
 
               <div className="space-y-4">
                 {/* Organization Section */}
-                {orgAction === 'create' ? (
-                  <div className="space-y-3">
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Organization</label>
-                    <input type="text" placeholder="Organization Name" value={form.orgName} onChange={(e) => updateForm('orgName', e.target.value)}
-                      className={inputClass} style={inputStyle} {...focusHandlers} required />
-                    <div className="grid grid-cols-2 gap-2">
-                      <select value={form.orgIndustry} onChange={(e) => updateForm('orgIndustry', e.target.value)}
-                        className={inputClass} style={inputStyle} {...focusHandlers}>
-                        <option value="">Industry</option>
-                        <option value="Technology">Technology</option><option value="Finance">Finance</option>
-                        <option value="Healthcare">Healthcare</option><option value="Education">Education</option>
-                        <option value="Retail">Retail</option><option value="Manufacturing">Manufacturing</option>
-                        <option value="Other">Other</option>
-                      </select>
-                      <select value={form.orgSize} onChange={(e) => updateForm('orgSize', e.target.value)}
-                        className={inputClass} style={inputStyle} {...focusHandlers}>
-                        <option value="1-50">1-50</option><option value="51-200">51-200</option>
-                        <option value="201-500">201-500</option><option value="501-1000">501-1000</option>
-                        <option value="1000+">1000+</option>
-                      </select>
-                    </div>
+                <div className="space-y-3">
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Organization</label>
+                  <input type="text" placeholder="Organization Name" value={form.orgName} onChange={(e) => updateForm('orgName', e.target.value)}
+                    className={inputClass} style={inputStyle} {...focusHandlers} required />
+                  <div className="grid grid-cols-2 gap-2">
+                    <select value={form.orgIndustry} onChange={(e) => updateForm('orgIndustry', e.target.value)}
+                      className={inputClass} style={inputStyle} {...focusHandlers}>
+                      <option value="">Industry</option>
+                      <option value="Technology">Technology</option><option value="Finance">Finance</option>
+                      <option value="Healthcare">Healthcare</option><option value="Education">Education</option>
+                      <option value="Retail">Retail</option><option value="Manufacturing">Manufacturing</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    <select value={form.orgSize} onChange={(e) => updateForm('orgSize', e.target.value)}
+                      className={inputClass} style={inputStyle} {...focusHandlers}>
+                      <option value="1-50">1-50</option><option value="51-200">51-200</option>
+                      <option value="201-500">201-500</option><option value="501-1000">501-1000</option>
+                      <option value="1000+">1000+</option>
+                    </select>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Organization Code</label>
-                    <input type="text" placeholder="e.g. ACME1234" value={form.orgCode}
-                      onChange={(e) => updateForm('orgCode', e.target.value.toUpperCase())}
-                      className={`${inputClass} font-mono tracking-widest text-center`} style={inputStyle} {...focusHandlers} required />
-                    <p className="text-xs text-slate-500 text-center">Ask your admin for this code</p>
-                  </div>
-                )}
+                </div>
 
                 {/* Divider */}
                 <div className="relative">
@@ -287,20 +212,14 @@ const RegisterPage = () => {
                   onChange={(e) => updateForm('department', e.target.value)}
                   className={inputClass} style={inputStyle} {...focusHandlers} />
 
-                {orgAction === 'join' && (
-                  <select value={form.role} onChange={(e) => updateForm('role', e.target.value)}
-                    className={inputClass} style={inputStyle} {...focusHandlers}>
-                    <option value="employee">Employee</option><option value="cybersecurity">Cybersecurity Team</option>
-                    <option value="analyst">Security Analyst</option><option value="admin">Administrator</option>
-                  </select>
-                )}
+
               </div>
 
               <button type="submit" disabled={loading}
                 className="w-full py-3 rounded-xl font-semibold text-sm text-white mt-6 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 style={{ background: 'linear-gradient(135deg, #0891b2 0%, #6366f1 100%)', boxShadow: '0 4px 16px rgba(8, 145, 178, 0.3)' }}>
                 {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating Account...</>
-                  : orgAction === 'create' ? 'Create Organization' : 'Join Organization'}
+                  : 'Create Organization'}
               </button>
 
               <p className="mt-4 text-center text-sm text-slate-400">

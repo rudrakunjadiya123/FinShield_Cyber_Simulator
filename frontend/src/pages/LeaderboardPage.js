@@ -154,11 +154,6 @@ const LeaderboardPage = () => {
                   <div className="text-right ml-3 flex-shrink-0">
                     <p className="text-lg font-bold text-cyan-600">{user.security_score ?? 100}<span className="text-xs font-normal text-slate-400">/100</span></p>
                     <p className="text-xs text-slate-400">{user.points} pts</p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      user.security_level === 'Security Champion' ? 'bg-green-100 text-green-700' :
-                      user.security_level === 'Aware' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>{user.security_level}</span>
                   </div>
                 </button>
               ))
@@ -233,7 +228,7 @@ const ScoreExplanation = ({ onClose }) => (
     <div className="p-5">
       {/* Points System */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-3">Points System (used for Security Level badge)</h3>
+        <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-3">Points System</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
             <p className="text-2xl font-bold text-green-600">+10</p>
@@ -286,33 +281,7 @@ const ScoreExplanation = ({ onClose }) => (
         </div>
       </div>
 
-      {/* Security Levels */}
-      <div>
-        <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-3">Security Levels (Based on Points)</h3>
-        <div className="flex flex-wrap gap-3">
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <div>
-              <p className="text-sm font-semibold text-red-700">Beginner</p>
-              <p className="text-xs text-red-600">0 - 20 points</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2">
-            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-            <div>
-              <p className="text-sm font-semibold text-yellow-700">Aware</p>
-              <p className="text-xs text-yellow-600">21 - 50 points</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-2">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            <div>
-              <p className="text-sm font-semibold text-green-700">Security Champion</p>
-              <p className="text-xs text-green-600">51+ points</p>
-            </div>
-          </div>
-        </div>
-      </div>
+
     </div>
   </div>
 );
@@ -353,11 +322,6 @@ const EmployeeDetailPanel = ({ data, loading, onClose }) => {
         <div className="flex items-center gap-4">
           <div className="text-right">
             <p className="text-2xl font-bold text-cyan-600">{user.points} pts</p>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${
-              user.security_level === 'Security Champion' ? 'bg-green-100 text-green-700' :
-              user.security_level === 'Aware' ? 'bg-yellow-100 text-yellow-700' :
-              'bg-red-100 text-red-700'
-            }`}>{user.security_level}</span>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -525,7 +489,6 @@ const EmployeeDetailPanel = ({ data, loading, onClose }) => {
                   <tr className="bg-slate-50 text-left">
                     <th className="px-4 py-2 font-medium text-slate-600">Campaign</th>
                     <th className="px-4 py-2 font-medium text-slate-600">Date</th>
-                    <th className="px-4 py-2 font-medium text-slate-600 text-center">Opened</th>
                     <th className="px-4 py-2 font-medium text-slate-600 text-center">Clicked</th>
                     <th className="px-4 py-2 font-medium text-slate-600 text-center">Submitted</th>
                     <th className="px-4 py-2 font-medium text-slate-600 text-center">Reported</th>
@@ -536,9 +499,6 @@ const EmployeeDetailPanel = ({ data, loading, onClose }) => {
                     <tr key={i} className="hover:bg-slate-50">
                       <td className="px-4 py-2 text-slate-800">{c.campaign}</td>
                       <td className="px-4 py-2 text-slate-500">{new Date(c.date).toLocaleDateString()}</td>
-                      <td className="px-4 py-2 text-center">
-                        <StatusBadge ok={c.email_opened} goodLabel="Yes" badLabel="No" reverse />
-                      </td>
                       <td className="px-4 py-2 text-center">
                         <StatusBadge ok={!c.link_clicked} goodLabel="No" badLabel="Yes" />
                       </td>

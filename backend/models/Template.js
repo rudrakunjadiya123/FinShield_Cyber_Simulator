@@ -9,7 +9,12 @@ const templateSchema = new mongoose.Schema({
   is_predefined: { type: Boolean, default: false },
   ai_generated: { type: Boolean, default: false },
   created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  organization_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true }
+  organization_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
+  attack_category: { 
+    type: String, 
+    enum: ['Email', 'Credential', 'QR', 'SMS', 'Incident Drill', 'Cloud'],
+    default: 'Email'
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Template', templateSchema);

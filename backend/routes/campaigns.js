@@ -246,7 +246,7 @@ router.get('/:id/stats', auth, authorize('admin', 'cybersecurity', 'analyst'), a
       organization_id: req.user.organization_id
     }).populate('user_id', 'name email department');
     const total = logs.length;
-    const opened = logs.filter(l => l.email_opened).length;
+
     const clicked = logs.filter(l => l.link_clicked).length;
     const reported = logs.filter(l => l.reported_email).length;
     const submitted = logs.filter(l => l.form_submitted).length;
@@ -263,7 +263,7 @@ router.get('/:id/stats', auth, authorize('admin', 'cybersecurity', 'analyst'), a
 
     res.json({
       total_targets: total,
-      email_opened: opened,
+
       link_clicked: clicked,
       reported_email: reported,
       form_submitted: submitted,

@@ -13,11 +13,7 @@ const userSchema = new mongoose.Schema({
   },
   organization_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
   points: { type: Number, default: 0 },
-  security_level: {
-    type: String,
-    enum: ['Beginner', 'Aware', 'Security Champion'],
-    default: 'Beginner'
-  }
+  employee_id: { type: String, unique: true, sparse: true }
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {
@@ -26,12 +22,7 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-userSchema.pre('save', function (next) {
-  if (this.points <= 20) this.security_level = 'Beginner';
-  else if (this.points <= 50) this.security_level = 'Aware';
-  else this.security_level = 'Security Champion';
-  next();
-});
+
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);

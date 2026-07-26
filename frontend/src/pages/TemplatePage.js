@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { Search } from 'lucide-react';
 
 const TemplatePage = () => {
   const { user } = useAuth();
@@ -11,9 +12,11 @@ const TemplatePage = () => {
   const [message, setMessage] = useState('');
   const [previewHtml, setPreviewHtml] = useState(null);
   const [htmlFileName, setHtmlFileName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All');
   const [form, setForm] = useState({
     template_name: '', description: '', phishing_link: '',
-    html_code: '', tracked_elements_input: ''
+    html_code: '', tracked_elements_input: '', attack_category: 'Email'
   });
 
   useEffect(() => { fetchTemplates(); }, []);
@@ -29,7 +32,7 @@ const TemplatePage = () => {
   const resetForm = () => {
     setForm({
       template_name: '', description: '', phishing_link: '',
-      html_code: '', tracked_elements_input: ''
+      html_code: '', tracked_elements_input: '', attack_category: 'Email'
     });
     setHtmlFileName('');
     setEditId(null);
@@ -80,7 +83,8 @@ const TemplatePage = () => {
       description: t.description || '',
       phishing_link: t.phishing_link || '',
       html_code: t.html_code || '',
-      tracked_elements_input: (t.tracked_elements || []).join(', ')
+      tracked_elements_input: (t.tracked_elements || []).join(', '),
+      attack_category: t.attack_category || 'Email'
     });
     setHtmlFileName(t.html_code ? 'Existing HTML content' : '');
     setEditId(t._id);
@@ -121,17 +125,54 @@ const TemplatePage = () => {
     );
   }
 
+  const filteredTemplates = templates.filter(t => {
+    const matchesSearch = t.template_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          t.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = categoryFilter === 'All' || t.attack_category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
   return (
     <div className="page-container">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="page-title">Templates</h1>
+        <div>
+          <h1 className="page-title">Templates</h1>
+          <p className="text-sm text-slate-500">Manage and deploy security awareness campaign templates.</p>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={() => { setShowForm(!showForm); if (showForm) resetForm(); }}
-            className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
           >
             {showForm ? 'Cancel' : '+ New Template'}
           </button>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <select 
+           value={categoryFilter}
+           onChange={(e) => setCategoryFilter(e.target.value)}
+           className="px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm bg-white text-slate-700 font-medium"
+        >
+           <option value="All">All Categories</option>
+           <option value="Email">Email</option>
+           <option value="Credential">Credential</option>
+           <option value="QR">QR</option>
+           <option value="SMS">SMS</option>
+           <option value="Incident Drill">Incident Drill</option>
+           <option value="Cloud">Cloud</option>
+        </select>
+        
+        <div className="relative">
+           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+           <input
+             type="text"
+             placeholder="Search templates..."
+             value={searchQuery}
+             onChange={(e) => setSearchQuery(e.target.value)}
+             className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 w-64 text-slate-600"
+           />
         </div>
       </div>
 
@@ -154,6 +195,18 @@ const TemplatePage = () => {
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
               <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-2 border rounded-lg" rows="2" placeholder="Describe the template" />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Attack Category *</label>
+              <select value={form.attack_category} onChange={(e) => setForm({ ...form, attack_category: e.target.value })} className="w-full px-4 py-2 border rounded-lg bg-white" required>
+                <option value="Email">Email</option>
+                <option value="Credential">Credential</option>
+                <option value="QR">QR</option>
+                <option value="SMS">SMS</option>
+                <option value="Incident Drill">Incident Drill</option>
+                <option value="Cloud">Cloud</option>
+              </select>
             </div>
 
             {/* HTML File Upload */}
@@ -192,7 +245,7 @@ const TemplatePage = () => {
               />
             </div>
             
-            <button type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+            <button type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-lg font-medium text-sm transition-colors">
               {editId ? 'Update Template' : 'Create Template'}
             </button>
           </form>
@@ -200,33 +253,47 @@ const TemplatePage = () => {
       )}
 
       {/* Template List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {templates.map(t => (
-          <div key={t._id} className={`glass-card p-5 ${t.is_predefined ? 'border-l-4 border-cyan-500' : ''}`}>
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h3 className="font-semibold text-slate-800">{t.template_name}</h3>
-                {t.description && <p className="text-sm text-slate-600 mt-0.5">{t.description}</p>}
-              </div>
-              <div className="flex gap-1 flex-wrap">
-                {t.is_predefined && <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 font-medium">System</span>}
-                {t.ai_generated && <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">AI</span>}
-                {t.tracked_elements && t.tracked_elements.length > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">🎯 {t.tracked_elements.length} Tracked</span>}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredTemplates.map(t => (
+          <div key={t._id} className={`bg-white rounded-xl shadow-sm border ${t.is_predefined ? 'border-cyan-200' : 'border-slate-200'} p-5 flex flex-col h-full hover:shadow-md transition-shadow`}>
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="font-bold text-slate-800 text-lg pr-4">{t.template_name}</h3>
+              <div className="flex gap-1 flex-col items-end shrink-0">
+                {t.is_predefined && <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold uppercase tracking-wider">System</span>}
+                {t.tracked_elements && t.tracked_elements.length > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 font-medium whitespace-nowrap outline outline-1 outline-cyan-200">🎯 {t.tracked_elements.length} Tracked</span>}
               </div>
             </div>
-            <div className="flex gap-2">
-              {t.html_code && (
-                <button onClick={() => setPreviewHtml(t.html_code)} className="text-sm bg-cyan-50 hover:bg-cyan-100 text-cyan-700 px-3 py-1 rounded transition-colors font-medium">Preview Page</button>
-              )}
-              {(!t.is_predefined || user?.role === 'admin') && (
-                <button onClick={() => handleEdit(t)} className="text-sm bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded transition-colors">Edit</button>
-              )}
-              {!t.is_predefined && (
-                <button onClick={() => handleDelete(t._id)} className="text-sm bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1 rounded transition-colors">Delete</button>
-              )}
+            
+            <div className="mb-4 flex-grow">
+               {t.attack_category && <span className="inline-block mb-2 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{t.attack_category}</span>}
+               {t.description && <p className="text-sm text-slate-500">{t.description}</p>}
+            </div>
+
+            <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-100">
+              <div className="flex gap-3">
+                {t.html_code && (
+                  <button onClick={() => setPreviewHtml(t.html_code)} className="text-sm font-medium text-cyan-600 hover:text-cyan-700">Preview Page</button>
+                )}
+                {(!t.is_predefined || user?.role === 'admin') && (
+                  <button onClick={() => handleEdit(t)} className="text-sm font-medium text-slate-600 hover:text-slate-800">Edit</button>
+                )}
+              </div>
+                <button onClick={() => handleDelete(t._id)} className="text-sm font-medium text-red-500 hover:text-red-700">Delete</button>
             </div>
           </div>
         ))}
+        
+        {/* Dashed Create New Card */}
+        <button 
+          onClick={() => { setShowForm(true); resetForm(); }}
+          className="border-2 border-dashed border-slate-300 rounded-xl p-5 flex flex-col items-center justify-center text-center h-full min-h-[220px] hover:border-cyan-400 hover:bg-cyan-50/50 transition-colors bg-slate-50/50 group"
+        >
+          <div className="w-12 h-12 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-600 mb-3 group-hover:scale-110 transition-transform">
+             <span className="text-2xl font-normal">+</span>
+          </div>
+          <h3 className="font-bold text-slate-800">Create New</h3>
+          <p className="text-xs text-slate-500">Start from a blank canvas</p>
+        </button>
       </div>
     </div>
   );

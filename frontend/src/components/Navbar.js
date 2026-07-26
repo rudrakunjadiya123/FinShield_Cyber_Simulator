@@ -28,13 +28,11 @@ const Navbar = () => {
       { to: '/campaigns', label: 'Campaigns', icon: Target },
       { to: '/templates', label: 'Templates', icon: FileText },
       { to: '/users', label: 'Users', icon: Users },
-      { to: '/training', label: 'Training', icon: GraduationCap },
       { to: '/employee-reports', label: 'User Reports', icon: ClipboardCheck },
     ],
     cybersecurity: [
       { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { to: '/templates', label: 'Templates', icon: FileText },
-      { to: '/training', label: 'Training', icon: GraduationCap },
       { to: '/employee-reports', label: 'User Reports', icon: ClipboardCheck },
     ],
     analyst: [
@@ -42,7 +40,6 @@ const Navbar = () => {
     ],
     employee: [
       { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { to: '/training', label: 'Training', icon: GraduationCap },
     ],
   };
 

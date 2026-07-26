@@ -21,7 +21,7 @@ router.get('/my-stats', auth, async (req, res) => {
       .sort({ timestamp: -1 });
 
     const totalPhishingAttempts = logs.length;
-    const emailsOpened = logs.filter(l => l.email_opened).length;
+
     const linksClicked = logs.filter(l => l.link_clicked).length;
     const emailsReported = logs.filter(l => l.reported_email).length;
     const formsSubmitted = logs.filter(l => l.form_submitted).length;
@@ -37,7 +37,7 @@ router.get('/my-stats', auth, async (req, res) => {
     const recentActivity = logs.slice(0, 5).map(log => ({
       campaign: log.campaign_id?.name || 'Unknown Campaign',
       date: log.timestamp,
-      emailOpened: log.email_opened,
+
       linkClicked: log.link_clicked,
       reported: log.reported_email,
       formSubmitted: log.form_submitted
@@ -49,11 +49,11 @@ router.get('/my-stats', auth, async (req, res) => {
         email: user.email,
         department: user.department,
         points: user.points || 0,
-        security_level: user.security_level || 'Beginner'
+        employee_id: user.employee_id
       },
       stats: {
         total_phishing_attempts: totalPhishingAttempts,
-        emails_opened: emailsOpened,
+
         links_clicked: linksClicked,
         emails_reported: emailsReported,
         forms_submitted: formsSubmitted,
@@ -128,7 +128,7 @@ router.get('/dashboard-v2', auth, authorize('admin', 'cybersecurity', 'analyst')
 
     // ===== 1. Phishing Email Interaction Rate (Bar Chart) =====
     const interactionRate = {
-      emails_opened: logs.filter(l => l.email_opened).length,
+
       links_clicked: logs.filter(l => l.link_clicked).length,
       credentials_entered: logs.filter(l => l.form_submitted).length,
       emails_reported: logs.filter(l => l.reported_email).length
@@ -203,13 +203,14 @@ router.get('/dashboard-v2', auth, authorize('admin', 'cybersecurity', 'analyst')
         risk_score: u.total > 0 ? Math.min(100, Math.round((u.clicked * 20 + u.submitted * 40) / u.total * (100 / 60))) : 0
       }))
       .sort((a, b) => b.risk_score - a.risk_score)
-      .slice(0, 10);
+      .slice(0, 4);
 
     // ===== 5. Campaign Performance Funnel =====
     const totalEmailsSent = logs.length;
+    const noAction = logs.filter(l => !l.link_clicked && !l.reported_email && !l.form_submitted).length;
     const funnelData = [
       { name: 'Emails Sent', value: totalEmailsSent },
-      { name: 'Emails Opened', value: interactionRate.emails_opened },
+      { name: 'No Action', value: noAction },
       { name: 'Links Clicked', value: interactionRate.links_clicked },
       { name: 'Credentials Entered', value: interactionRate.credentials_entered },
       { name: 'Emails Reported', value: interactionRate.emails_reported }
@@ -219,9 +220,9 @@ router.get('/dashboard-v2', auth, authorize('admin', 'cybersecurity', 'analyst')
     const deptStats = {};
     for (const log of logs) {
       const dept = log.user_id?.department || 'Unknown';
-      if (!deptStats[dept]) deptStats[dept] = { total: 0, opened: 0, clicked: 0, reported: 0, submitted: 0 };
+      if (!deptStats[dept]) deptStats[dept] = { total: 0, clicked: 0, reported: 0, submitted: 0 };
       deptStats[dept].total++;
-      if (log.email_opened) deptStats[dept].opened++;
+
       if (log.link_clicked) deptStats[dept].clicked++;
       if (log.reported_email) deptStats[dept].reported++;
       if (log.form_submitted) deptStats[dept].submitted++;
@@ -233,7 +234,7 @@ router.get('/dashboard-v2', auth, authorize('admin', 'cybersecurity', 'analyst')
       risk_score: stats.total > 0 ? Math.round((stats.clicked * 20 + stats.submitted * 30 - stats.reported * 10) / stats.total) : 0,
       click_rate: stats.total ? ((stats.clicked / stats.total) * 100).toFixed(1) : 0,
       report_rate: stats.total ? ((stats.reported / stats.total) * 100).toFixed(1) : 0
-    })).sort((a, b) => b.risk_score - a.risk_score);
+    })).sort((a, b) => b.risk_score - a.risk_score).slice(0, 1);
 
     // ===== 7. Overview Stats =====
     const totalUsers = await User.countDocuments({ role: 'employee', organization_id: orgId });
@@ -278,7 +279,7 @@ router.get('/dashboard-v2', auth, authorize('admin', 'cybersecurity', 'analyst')
 // POST /api/analytics/employee/report-phishing - Employee reports a phishing simulation
 router.post('/employee/report-phishing', auth, async (req, res) => {
   try {
-    const { subject, time, link } = req.body;
+    const { subject, time, link, description } = req.body;
     const userId = req.user.id;
     const user = await User.findById(userId);
     let matchedLog = null;
@@ -333,6 +334,10 @@ router.post('/employee/report-phishing', auth, async (req, res) => {
     if (matchedLog) {
       matchedLog.reported_email = true;
       matchedLog.reported_at = new Date();
+      if (description) matchedLog.report_description = description;
+      if (subject) matchedLog.report_subject = subject;
+      if (link) matchedLog.report_link = link;
+      if (time) matchedLog.report_time = time;
       await matchedLog.save();
 
       user.points = (user.points || 0) + 10;
@@ -345,10 +350,24 @@ router.post('/employee/report-phishing', auth, async (req, res) => {
       });
     }
 
+    // It is an outsider (real) phishing attempt
+    const newLog = new InteractionLog({
+      user_id: userId,
+      organization_id: user.organization_id,
+      reported_email: true,
+      reported_at: new Date(),
+      tracking_token: 'outsider_' + Date.now() + Math.random().toString(36).substring(2, 8),
+      report_subject: subject,
+      report_link: link,
+      report_time: time,
+      report_description: description || 'Reported outsider phishing email: ' + (subject || link || 'No details provided'),
+    });
+    await newLog.save();
+
     res.json({ 
       success: true, 
       matched: false, 
-      message: 'Report submitted to the security team.' 
+      message: 'Report submitted to the security team. Outsider attack recorded.' 
     });
 
   } catch (error) {
@@ -365,6 +384,24 @@ router.get('/employee-reports', auth, authorize('admin', 'cybersecurity'), async
       .populate('campaign_id', 'name template_id')
       .sort({ reported_at: -1 });
     res.json(reports);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// PUT /api/analytics/employee-reports/:id/visited - Toggle visited status
+router.put('/employee-reports/:id/visited', auth, authorize('admin', 'cybersecurity'), async (req, res) => {
+  try {
+    const reportId = req.params.id;
+    const orgId = req.user.organization_id;
+    
+    const report = await InteractionLog.findOne({ _id: reportId, organization_id: orgId });
+    if (!report) return res.status(404).json({ message: 'Report not found' });
+    
+    report.report_visited = !report.report_visited;
+    await report.save();
+    
+    res.json({ success: true, report_visited: report.report_visited });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

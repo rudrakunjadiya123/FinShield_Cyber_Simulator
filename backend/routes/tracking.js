@@ -21,13 +21,7 @@ router.get('/open/:token', async (req, res) => {
       { upsert: false }
     );
 
-    // Update InteractionLog
-    const log = await InteractionLog.findOne({ tracking_token: token });
-    if (log && !log.email_opened) {
-      log.email_opened = true;
-      log.email_opened_at = new Date();
-      await log.save();
-    }
+
 
     // Return a 1x1 transparent pixel
     const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
@@ -213,11 +207,7 @@ router.post('/report/:token', async (req, res) => {
     const log = await InteractionLog.findOne({ tracking_token: token });
     if (!log) return res.status(404).json({ message: 'Not found' });
 
-    // Auto-mark opens and clicks since they interacted
-    if (!log.email_opened) {
-      log.email_opened = true;
-      log.email_opened_at = new Date();
-    }
+
     if (!log.link_clicked) {
       log.link_clicked = true;
       log.link_clicked_at = new Date();
@@ -289,12 +279,7 @@ router.post('/submit/:token', async (req, res) => {
     });
     if (!log) return res.status(404).json({ message: 'Not found' });
 
-    // SECURITY: Do NOT store any submitted form data (passwords, credentials, etc.)
-    // Auto-mark opens and clicks since they interacted
-    if (!log.email_opened) {
-      log.email_opened = true;
-      log.email_opened_at = new Date();
-    }
+
     if (!log.link_clicked) {
       log.link_clicked = true;
       log.link_clicked_at = new Date();

@@ -5,6 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   LineChart, Line, PieChart, Pie, Cell
 } from 'recharts';
+import { Shield, TrendingUp, User } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import AnalyticsDashboard from './AnalyticsDashboard';
@@ -18,12 +19,7 @@ const DashboardPage = () => {
     return <EmployeeDashboard user={user} />;
   }
 
-  return (
-    <>
-      <AdminDashboard user={user} onFilterChange={setFilters} />
-      <AnalyticsDashboard filters={filters} />
-    </>
-  );
+  return <AdminDashboard user={user} onFilterChange={setFilters} />;
 };
 
 // Employee Dashboard - Personal stats only
@@ -35,6 +31,7 @@ const EmployeeDashboard = ({ user }) => {
   const [reportSubject, setReportSubject] = useState('');
   const [reportTime, setReportTime] = useState('');
   const [reportLink, setReportLink] = useState('');
+  const [reportDescription, setReportDescription] = useState('');
   const [reportStatus, setReportStatus] = useState({ type: '', message: '' });
   const [reportLoading, setReportLoading] = useState(false);
 
@@ -60,7 +57,8 @@ const EmployeeDashboard = ({ user }) => {
       const res = await api.post('/analytics/employee/report-phishing', {
         subject: reportSubject,
         time: reportTime,
-        link: reportLink
+        link: reportLink,
+        description: reportDescription
       });
       setReportStatus({
         type: res.data.matched ? 'success' : 'info',
@@ -74,6 +72,7 @@ const EmployeeDashboard = ({ user }) => {
       setReportSubject('');
       setReportTime('');
       setReportLink('');
+      setReportDescription('');
     } catch (err) {
       setReportStatus({ 
         type: 'error', 
@@ -124,9 +123,9 @@ const EmployeeDashboard = ({ user }) => {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-sm text-slate-500">Security Level</p>
-            <p className={`text-lg font-bold ${getSecurityLevelColor(userData.security_level)}`}>
-              {userData.security_level}
+            <p className="text-sm text-slate-500">Employee ID</p>
+            <p className="text-lg font-bold text-slate-700">
+              {userData.employee_id || '-'}
             </p>
           </div>
         </div>
@@ -188,6 +187,16 @@ const EmployeeDashboard = ({ user }) => {
                 onChange={(e) => setReportTime(e.target.value)}
               />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+            <textarea 
+              className="glass-input" 
+              placeholder="Provide any additional details about why you found this email suspicious..."
+              value={reportDescription}
+              onChange={(e) => setReportDescription(e.target.value)}
+              rows="3"
+            />
           </div>
           <button 
             type="submit" 
@@ -674,6 +683,29 @@ const AdminDashboard = ({ user, onFilterChange }) => {
   const departmentBreakdown = dashboardData?.departmentBreakdown || [];
   const departments = dashboardData?.departments || [];
 
+  // Generate newly added org risk score logic for light dashboard
+  const rawClickRate = parseFloat(overview.click_rate || 0);
+  const orgRiskScore = Math.max(0, Math.round(100 - (rawClickRate * 2.5)));
+  
+  const highestRiskDept = departmentBreakdown.length > 0 ? departmentBreakdown[0].department : 'None';
+  const highestRiskClickRate = departmentBreakdown.length > 0 ? departmentBreakdown[0].click_rate : 0;
+  
+  // Sort by lowest report rate for insights
+  const lowRepDepts = [...departmentBreakdown].sort((a, b) => a.report_rate - b.report_rate);
+  const lowestRepDept = lowRepDepts.length > 0 ? lowRepDepts[0].department : 'None';
+  const lowestRepRate = lowRepDepts.length > 0 ? lowRepDepts[0].report_rate : 0;
+  
+  const credTotal = interactionRate.credentials_entered || 0;
+  const sentTotal = overview.total_emails_sent || 1;
+  const credRate = ((credTotal / sentTotal) * 100).toFixed(1);
+
+  const heatmapData = departmentBreakdown.map(d => ({
+    name: d.department,
+    Clicks: d.clicked || 0,
+    Submits: d.submitted || 0,
+    Reports: d.reported || 0
+  }));
+
   // Prepare bar chart data
   const interactionBarData = [
     { name: 'Emails Opened', value: interactionRate.emails_opened || 0, fill: '#3b82f6' },
@@ -688,7 +720,7 @@ const AdminDashboard = ({ user, onFilterChange }) => {
       <div className="mb-6 flex flex-wrap justify-between items-start gap-4">
         <div>
           <h1 className="page-title">Analytics Dashboard</h1>
-          <p className="text-slate-500">Welcome back, {user?.name}</p>
+          <p className="text-sm text-slate-500">Welcome back, {user?.name}</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
@@ -774,43 +806,93 @@ const AdminDashboard = ({ user, onFilterChange }) => {
         <StatCard label="Report Rate" value={`${overview.report_rate || 0}%`} icon="flag" color="bg-emerald-500" />
       </div>
 
-      {/* AI Insights */}
-      {insights.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-3">AI Insights</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {insights.map((insight, i) => (
-              <InsightCard key={i} insight={insight} />
-            ))}
+      {/* Organization Cyber Risk Score */}
+      <div className="bg-white rounded-xl mb-6 shadow-[0px_2px_10px_rgba(0,0,0,0.02)] flex flex-col md:flex-row justify-between items-start md:items-center px-8 py-6">
+        <div className="flex items-center gap-6">
+          <div className="w-[4.5rem] h-[4.5rem] rounded-2xl bg-red-50 flex items-center justify-center">
+            <Shield className="w-8 h-8 text-red-600" strokeWidth={1.5} fill="none" />
+          </div>
+          <div>
+            <h2 className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1.5">Organization Cyber Risk Score</h2>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-bold text-slate-800">{orgRiskScore}</span>
+              <span className="text-slate-400 text-lg font-medium">/ 100</span>
+            </div>
           </div>
         </div>
-      )}
+        
+        <div className="flex gap-16 mt-6 md:mt-0 md:px-8">
+          <div className="text-center">
+            <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-3">Risk Trend</p>
+            <p className="text-emerald-500 text-sm flex items-center justify-center gap-1 font-bold">
+              <TrendingUp className="w-4 h-4" strokeWidth={2.5} /> +12%
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-3">Active Campaigns</p>
+            <p className="text-indigo-900 text-sm font-bold">{overview.active_campaigns || 0}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-3">High Risk Users</p>
+            <p className="text-rose-500 text-sm font-bold">{highRiskEmployees.length}</p>
+          </div>
+        </div>
+      </div>
 
-      {/* Charts Row 1: Bar Chart & Line Chart */}
+      {/* Custom AI Insights Blocks */}
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-xl font-medium text-slate-800">AI Insights</h2>
+          <span className="bg-cyan-100 text-cyan-600 text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded">Smart Analysis</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-[#fcf7ed] border border-orange-100 rounded-xl p-5 flex flex-col justify-between shadow-[0px_2px_8px_rgba(0,0,0,0.02)]">
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-full bg-orange-100 border border-orange-200 text-orange-600 flex items-center justify-center font-serif italic text-sm">⚠</div>
+                <h3 className="font-semibold text-orange-800">Most Vulnerable Department</h3>
+              </div>
+              <p className="text-sm text-orange-900/80 leading-relaxed mb-6">
+                <strong className="text-orange-900 font-bold">{highestRiskDept} department</strong> shows the highest phishing click rate at <strong className="text-orange-900 font-bold">{highestRiskClickRate}%</strong>. Immediate training recommended.
+              </p>
+            </div>
+            <button className="text-left text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1 transition-colors">
+              View analysis <span className="text-[10px]">→</span>
+            </button>
+          </div>
+          <div className="bg-[#eff5ff] border border-blue-100 rounded-xl p-5 flex flex-col justify-between shadow-[0px_2px_8px_rgba(0,0,0,0.02)]">
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-full bg-blue-100 border border-blue-200 text-blue-600 flex items-center justify-center font-serif italic text-sm">ℹ</div>
+                <h3 className="font-semibold text-blue-800">Lowest Reporting Rate</h3>
+              </div>
+              <p className="text-sm text-blue-900/80 leading-relaxed mb-6">
+                <strong className="text-blue-900 font-bold">{lowestRepDept} department</strong> has the lowest email reporting rate at <strong className="text-blue-900 font-bold">{lowestRepRate}%</strong>. Engagement gap detected.
+              </p>
+            </div>
+            <button className="text-left text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors">
+              Details <span className="text-[10px]">→</span>
+            </button>
+          </div>
+          <div className="bg-[#f2fbf6] border border-emerald-100 rounded-xl p-5 flex flex-col justify-between shadow-[0px_2px_8px_rgba(0,0,0,0.02)]">
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-600 flex items-center justify-center font-bold text-sm">ll.</div>
+                <h3 className="font-semibold text-emerald-800">Campaign Performance</h3>
+              </div>
+              <p className="text-sm text-emerald-900/80 leading-relaxed mb-6">
+                Overall click rate: <strong className="text-emerald-900 font-bold">{overview.click_rate}%</strong>, Report rate: <strong className="text-emerald-900 font-bold">{overview.report_rate}%</strong>, Credential submission rate: <strong className="text-emerald-900 font-bold">{credRate}%</strong>.
+              </p>
+            </div>
+            <button className="text-left text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 transition-colors">
+              Full summary <span className="text-[10px]">→</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts Row: Line Chart & Funnel Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Bar Chart - Phishing Email Interaction Rate */}
-        <div className="glass-card p-5">
-          <h3 className="text-base font-semibold text-slate-800 mb-4">Phishing Email Interaction Rate</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={interactionBarData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis type="number" tick={{ fontSize: 12 }} />
-                <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-                  formatter={(value) => [value, 'Count']}
-                />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                  {interactionBarData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
         {/* Line Chart - Department Risk Over Time */}
         <div className="glass-card p-5">
           <h3 className="text-base font-semibold text-slate-800 mb-4">Department Risk Level Over Time</h3>
@@ -844,45 +926,10 @@ const AdminDashboard = ({ user, onFilterChange }) => {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Charts Row 2: Pie Chart & Funnel Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Pie Chart - Attack Type Distribution */}
-        <div className="glass-card p-5">
-          <h3 className="text-base font-semibold text-slate-800 mb-4">Attack Type Distribution</h3>
-          <div className="h-64">
-            {attackTypeDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={attackTypeDistribution}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                    labelLine={false}
-                  >
-                    {attackTypeDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-slate-400">
-                No attack type data available
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* Simple Funnel - Campaign Performance */}
         <div className="glass-card p-5">
+
           <h3 className="text-base font-semibold text-slate-800 mb-4">Campaign Performance Funnel</h3>
           <div className="space-y-3">
             {funnelData.length > 0 ? (
@@ -914,62 +961,59 @@ const AdminDashboard = ({ user, onFilterChange }) => {
         </div>
       </div>
 
-      {/* High-Risk Employees Table */}
-      {highRiskEmployees.length > 0 && (
-        <div className="glass-card mb-6">
-          <div className="p-5 border-b border-slate-100">
-            <h3 className="text-base font-semibold text-slate-800">Top High-Risk Employees</h3>
-            <p className="text-xs text-slate-500 mt-1">Employees with highest vulnerability scores (0–100, higher = more at risk)</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Rank</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Employee</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Department</th>
-                  <th className="text-center px-4 py-3 font-medium text-slate-600">Vuln. Score</th>
-                  <th className="text-center px-4 py-3 font-medium text-slate-600">Clicked</th>
-                  <th className="text-center px-4 py-3 font-medium text-slate-600">Submitted</th>
-                  <th className="text-center px-4 py-3 font-medium text-slate-600">Reported</th>
-                </tr>
-              </thead>
-              <tbody>
-                {highRiskEmployees.map((emp, i) => (
-                  <tr key={emp.id || i} className="border-t border-slate-100 hover:bg-slate-50">
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                        i < 3 ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'
-                      }`}>
-                        {i + 1}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div>
-                        <p className="font-medium text-slate-800">{emp.name}</p>
-                        <p className="text-xs text-slate-500">{emp.email}</p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">{emp.department}</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                        emp.risk_score >= 70 ? 'bg-red-100 text-red-700' :
-                        emp.risk_score >= 40 ? 'bg-orange-100 text-orange-700' :
-                        'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {emp.risk_score}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center text-red-600 font-medium">{emp.clicked}</td>
-                    <td className="px-4 py-3 text-center text-orange-600 font-medium">{emp.submitted}</td>
-                    <td className="px-4 py-3 text-center text-green-600 font-medium">{emp.reported}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* Heatmap & High-Risk Employees Ported from Dark Theme */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* Risk Heatmap Array */}
+        <div className="glass-card p-6 pb-2">
+          <h3 className="text-slate-500 text-[10px] uppercase font-bold tracking-widest border-b border-slate-100 pb-4 mb-6">Risk Heatmap Array</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={heatmapData} layout="horizontal" barSize={16}>
+                <CartesianGrid strokeDasharray="2 2" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="name" stroke="#cbd5e1" tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={false} />
+                <YAxis stroke="#cbd5e1" tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={false} domain={[0, 'dataMax']} allowDecimals={false} />
+                <Tooltip cursor={{ fill: '#f8fafc' }} />
+                <Legend wrapperStyle={{ fontSize: '11px', color: '#64748b', paddingTop: '10px' }} iconType="circle" iconSize={6} />
+                <Bar dataKey="Clicks" stackId="a" fill="#f43f5e" />
+                <Bar dataKey="Submits" stackId="a" fill="#8b5cf6" />
+                <Bar dataKey="Reports" stackId="a" fill="#10b981" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
-      )}
+
+        {/* Top High Risk Employees */}
+        <div className="glass-card flex flex-col overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <h3 className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">Top High Risk Employees</h3>
+          </div>
+          <div className="p-6 pt-5 flex-grow overflow-auto max-h-[17.5rem]">
+            {highRiskEmployees.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-slate-400 text-xs">No high risk targets detected</div>
+            ) : (
+              <div className="space-y-3">
+                {highRiskEmployees.map((emp, i) => (
+                  <div key={emp.id || i} className="flex items-center justify-between p-3.5 border border-slate-200 bg-white rounded-xl hover:border-slate-300 hover:shadow-sm transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-500">
+                        <User className="w-5 h-5" strokeWidth={1.5} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-800 mb-0.5">{emp.name}</p>
+                        <p className="text-[10px] text-slate-500 font-medium uppercase font-mono tracking-wider">{emp.department}</p>
+                      </div>
+                    </div>
+                    <div className="text-right flex flex-col items-center justify-center pr-2">
+                      <p className="text-lg font-bold text-rose-500 mb-0.5">{emp.risk_score}</p>
+                      <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Risk Score</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Department Risk Summary */}
       {departmentBreakdown.length > 0 && (
@@ -985,7 +1029,6 @@ const AdminDashboard = ({ user, onFilterChange }) => {
                   <th className="text-left px-4 py-3 font-medium text-slate-600">Department</th>
                   <th className="text-center px-4 py-3 font-medium text-slate-600">Vuln. Score</th>
                   <th className="text-center px-4 py-3 font-medium text-slate-600">Total</th>
-                  <th className="text-center px-4 py-3 font-medium text-slate-600">Opened</th>
                   <th className="text-center px-4 py-3 font-medium text-slate-600">Clicked</th>
                   <th className="text-center px-4 py-3 font-medium text-slate-600">Submitted</th>
                   <th className="text-center px-4 py-3 font-medium text-slate-600">Reported</th>
@@ -1008,7 +1051,6 @@ const AdminDashboard = ({ user, onFilterChange }) => {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">{dept.total}</td>
-                    <td className="px-4 py-3 text-center text-blue-600">{dept.opened}</td>
                     <td className="px-4 py-3 text-center text-red-600">{dept.clicked}</td>
                     <td className="px-4 py-3 text-center text-orange-600">{dept.submitted}</td>
                     <td className="px-4 py-3 text-center text-green-600">{dept.reported}</td>

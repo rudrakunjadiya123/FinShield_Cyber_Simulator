@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../services/api';
+import { Search } from 'lucide-react';
 
 const UserUploadPage = () => {
   const [users, setUsers] = useState([]);
@@ -9,10 +10,11 @@ const UserUploadPage = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [filter, setFilter] = useState('');
-  const [addForm, setAddForm] = useState({ name: '', email: '', department: '' });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [addForm, setAddForm] = useState({ name: '', email: '', department: '', employee_id: '', role: 'employee' });
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', email: '', department: '' });
+  const [editForm, setEditForm] = useState({ name: '', email: '', department: '', employee_id: '' });
   const fileInputRef = useRef(null);
 
   const fetchUsers = useCallback(async () => {
@@ -70,7 +72,7 @@ const UserUploadPage = () => {
     try {
       await api.post('/users/add', addForm);
       showMsg('User added successfully', 'success');
-      setAddForm({ name: '', email: '', department: '' });
+      setAddForm({ name: '', email: '', department: '', employee_id: '', role: 'employee' });
       setShowAdd(false);
       fetchUsers();
     } catch (err) {
@@ -80,12 +82,12 @@ const UserUploadPage = () => {
 
   const handleEditStart = (u) => {
     setEditId(u._id);
-    setEditForm({ name: u.name, email: u.email, department: u.department });
+    setEditForm({ name: u.name, email: u.email, department: u.department, employee_id: u.employee_id || '' });
   };
 
   const handleEditCancel = () => {
     setEditId(null);
-    setEditForm({ name: '', email: '', department: '' });
+    setEditForm({ name: '', email: '', department: '', employee_id: '' });
   };
 
   const handleEditSave = async () => {
@@ -110,7 +112,14 @@ const UserUploadPage = () => {
     }
   };
 
-  const filtered = filter ? users.filter(u => u.department === filter) : users;
+  const filtered = users.filter(u => {
+    const matchesFilter = filter ? u.department === filter : true;
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = searchQuery 
+      ? (u.name?.toLowerCase().includes(searchLower) || u.email?.toLowerCase().includes(searchLower))
+      : true;
+    return matchesFilter && matchesSearch;
+  });
 
   const msgColors = {
     info: 'bg-blue-50 border-blue-200 text-blue-700',
@@ -136,7 +145,7 @@ const UserUploadPage = () => {
         </div>
         <button
           onClick={() => setShowAdd(!showAdd)}
-          className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg font-medium"
+          className="bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2 rounded-lg font-medium text-sm shadow-sm transition-colors"
         >
           {showAdd ? 'Cancel' : '+ Add User'}
         </button>
@@ -150,21 +159,23 @@ const UserUploadPage = () => {
       )}
 
       {/* Upload CSV / Excel */}
-      <div className="glass-card p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-1">Upload Users File</h2>
-        <p className="text-xs text-slate-400 mb-4">
-          Supports CSV and Excel (.csv, .xlsx, .xls). Required columns: <strong>name, email, department</strong>
-        </p>
-        <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center mb-4 hover:border-cyan-300 transition-colors">
-          <div className="text-4xl mb-2">📂</div>
-          <p className="text-sm text-slate-600 mb-3">
-            {file ? (
-              <span className="text-cyan-600 font-medium">{file.name} ({(file.size / 1024).toFixed(1)} KB)</span>
-            ) : (
-              'Click below to select a CSV or Excel file'
-            )}
-          </p>
-          <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2 rounded-lg text-sm font-medium transition-colors inline-block">
+      <div className="bg-white border text-center border-slate-200 rounded-xl p-6 mb-6 shadow-sm">
+        <div className="text-left mb-6">
+           <h2 className="text-lg font-semibold text-slate-800 mb-1">Upload Users File</h2>
+           <p className="text-xs text-slate-500">
+             Supports CSV and Excel (.csv, .xlsx, .xls). Required columns: <span className="font-semibold text-cyan-700">name, email, department, employee_id</span>
+           </p>
+        </div>
+        
+        <div className="border-2 border-dashed border-slate-200 rounded-xl py-12 px-6 flex flex-col items-center justify-center mb-6 hover:bg-slate-50 transition-colors">
+          <div className="w-14 h-14 rounded-full bg-[#e0f7fa] flex items-center justify-center text-[#006064] mb-4">
+             <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
+               <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm14-1V6H4v3h12V5z" clipRule="evenodd" />
+               <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+             </svg>
+          </div>
+          <p className="text-sm text-slate-600 mb-4">Click below to select a CSV or Excel file</p>
+          <label className="cursor-pointer bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-6 py-1.5 font-medium rounded-full text-sm transition-colors shadow-sm">
             Choose File
             <input
               type="file"
@@ -174,11 +185,14 @@ const UserUploadPage = () => {
               className="hidden"
             />
           </label>
+           {file && (
+             <p className="text-sm text-cyan-700 font-medium mt-3">Selected: {file.name} ({(file.size / 1024).toFixed(1)} KB)</p>
+          )}
         </div>
         <button
           onClick={handleUpload}
           disabled={!file || uploading}
-          className="w-full bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+          className="w-full bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-lg font-semibold text-sm shadow-sm flex items-center justify-center gap-2 transition-colors"
         >
           {uploading ? (
             <>
@@ -195,29 +209,45 @@ const UserUploadPage = () => {
       {showAdd && (
         <div className="glass-card p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4">Add Single User</h2>
-          <form onSubmit={handleAddUser} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <form onSubmit={handleAddUser} className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            <input
+              type="text" placeholder="Employee ID"
+              value={addForm.employee_id}
+              onChange={(e) => setAddForm({ ...addForm, employee_id: e.target.value })}
+              className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            />
             <input
               type="text" placeholder="Full Name"
               value={addForm.name}
               onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
-              className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
               required
             />
             <input
               type="email" placeholder="Email Address"
               value={addForm.email}
               onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
-              className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
               required
             />
             <input
               type="text" placeholder="Department"
               value={addForm.department}
               onChange={(e) => setAddForm({ ...addForm, department: e.target.value })}
-              className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
               required
             />
-            <button type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg font-medium">
+            <select
+              value={addForm.role}
+              onChange={(e) => setAddForm({ ...addForm, role: e.target.value })}
+              className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white"
+            >
+              <option value="employee">Employee</option>
+              <option value="admin">Administrator</option>
+              <option value="cybersecurity">Cyber Security Team</option>
+              <option value="analyst">Security Analyst</option>
+            </select>
+            <button type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors">
               Add User
             </button>
           </form>
@@ -225,21 +255,35 @@ const UserUploadPage = () => {
       )}
 
       {/* Filter & List */}
-      <div className="flex items-center gap-4 mb-4">
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-        >
-          <option value="">All Departments ({users.length})</option>
-          {departments.map(d => (
-            <option key={d} value={d}>{d} ({users.filter(u => u.department === d).length})</option>
-          ))}
-        </select>
-        <span className="text-sm text-slate-500">{filtered.length} users shown</span>
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <div className="flex items-center gap-4">
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="px-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none w-48 shadow-sm text-slate-700"
+          >
+            <option value="">All Departments ({users.length})</option>
+            {departments.map(d => (
+              <option key={d} value={d}>{d} ({users.filter(u => u.department === d).length})</option>
+            ))}
+          </select>
+          <span className="text-xs font-medium text-slate-600">{filtered.length} users shown</span>
+        </div>
+        <div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by name or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500 w-72 text-slate-600"
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="table-glass overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-8">
         {filtered.length === 0 ? (
           <div className="text-center py-12 text-slate-400">
             <div className="text-4xl mb-2">👥</div>
@@ -247,14 +291,14 @@ const UserUploadPage = () => {
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-slate-50">
+            <thead className="bg-[#eff2f9]">
               <tr>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Name</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Email</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Department</th>
-                <th className="text-center px-4 py-3 font-medium text-slate-600">Points</th>
-                <th className="text-center px-4 py-3 font-medium text-slate-600">Security Level</th>
-                <th className="text-center px-4 py-3 font-medium text-slate-600">Actions</th>
+                <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-slate-500 font-semibold">Name</th>
+                <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-slate-500 font-semibold">Email</th>
+                <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-slate-500 font-semibold">Department</th>
+                <th className="text-center px-5 py-3 text-xs uppercase tracking-wider text-slate-500 font-semibold">Points</th>
+                <th className="text-center px-5 py-3 text-xs uppercase tracking-wider text-slate-500 font-semibold">Employee ID</th>
+                <th className="text-right px-6 py-3 text-xs uppercase tracking-wider text-slate-500 font-semibold w-32">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -284,12 +328,12 @@ const UserUploadPage = () => {
                         />
                       </td>
                       <td className="text-center px-4 py-2 font-semibold text-cyan-600">{u.points}</td>
-                      <td className="text-center px-4 py-2">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          u.security_level === 'Security Champion' ? 'bg-green-100 text-green-700' :
-                          u.security_level === 'Aware' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>{u.security_level || 'Beginner'}</span>
+                      <td className="px-4 py-2">
+                        <input
+                          type="text" value={editForm.employee_id}
+                          onChange={(e) => setEditForm({ ...editForm, employee_id: e.target.value })}
+                          className="w-full px-2 py-1 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        />
                       </td>
                       <td className="text-center px-4 py-2">
                         <div className="flex items-center justify-center gap-1">
@@ -310,28 +354,24 @@ const UserUploadPage = () => {
                     </>
                   ) : (
                     <>
-                      <td className="px-4 py-3 font-medium text-slate-800">{u.name}</td>
-                      <td className="px-4 py-3 text-slate-600">{u.email}</td>
-                      <td className="px-4 py-3">{u.department}</td>
-                      <td className="text-center px-4 py-3 font-semibold text-cyan-600">{u.points}</td>
-                      <td className="text-center px-4 py-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          u.security_level === 'Security Champion' ? 'bg-green-100 text-green-700' :
-                          u.security_level === 'Aware' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>{u.security_level || 'Beginner'}</span>
+                      <td className="px-5 py-3.5 font-bold text-slate-800">{u.name}</td>
+                      <td className="px-5 py-3.5 text-slate-500">{u.email}</td>
+                      <td className="px-5 py-3.5">
+                        <span className="bg-cyan-50 text-cyan-700 border border-cyan-200 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider whitespace-nowrap">{u.department}</span>
                       </td>
-                      <td className="text-center px-4 py-3">
-                        <div className="flex items-center justify-center gap-1">
+                      <td className="text-center px-5 py-3.5 font-bold text-cyan-600">{u.points}</td>
+                      <td className="text-center px-5 py-3.5 text-slate-600">{u.employee_id || '-'}</td>
+                      <td className="text-right px-6 py-3.5 cursor-default">
+                        <div className="flex items-center justify-end gap-3">
                           <button
                             onClick={() => handleEditStart(u)}
-                            className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded transition-colors"
+                            className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => handleDelete(u._id, u.name)}
-                            className="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded transition-colors"
+                            className="text-xs font-bold text-red-600 hover:text-red-800 transition-colors cursor-pointer"
                           >
                             Delete
                           </button>
@@ -343,6 +383,16 @@ const UserUploadPage = () => {
               ))}
             </tbody>
           </table>
+        )}
+        
+        {filtered.length > 0 && (
+          <div className="px-6 py-4 border-t border-slate-100 bg-white text-xs text-slate-500 flex justify-between items-center">
+             <span>Showing {filtered.length} of {users.length} total records</span>
+             <div className="flex gap-2">
+               <button className="px-3 py-1.5 border border-slate-200 rounded text-slate-400 hover:bg-slate-50 disabled:opacity-50" disabled>&lt;</button>
+               <button className="px-3 py-1.5 border border-slate-200 rounded text-slate-400 hover:bg-slate-50 disabled:opacity-50" disabled>&gt;</button>
+             </div>
+          </div>
         )}
       </div>
     </div>

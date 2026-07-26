@@ -171,9 +171,9 @@ const LandingPage = () => {
                 <div className="w-14 h-14 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-4">
                   <ShieldAlert className="w-7 h-7" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Incident Drills & Training</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Points & Gamification</h3>
                 <p className="text-slate-600 text-sm leading-relaxed">
-                  Strengthen incident preparedness through interactive awareness quizzes and training modules triggered immediately after a failed simulation.
+                  Engage employees with points, leaderboards, and interactive cybersecurity gamification to boost morale and resilience.
                 </p>
               </div>
             </div>
@@ -206,7 +206,7 @@ const LandingPage = () => {
             <span className="text-lg font-bold text-slate-700">AttackSimulator</span>
           </div>
           <p className="text-sm text-slate-500">
-            Designed for cybersecurity teams, IT admins, and training coordinators.
+            Designed for cybersecurity teams, risk analysts, and IT admins.
           </p>
         </div>
       </footer>

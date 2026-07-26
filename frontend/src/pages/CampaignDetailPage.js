@@ -133,7 +133,6 @@ const CampaignDetailPage = () => {
           {/* Stat Cards */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             <StatCard label="Total Targets" value={stats.total_targets} />
-            <StatCard label="Emails Opened" value={stats.email_opened} sub={`${stats.open_rate}%`} color="text-blue-600" />
             <StatCard label="Links Clicked" value={stats.link_clicked} sub={`${stats.click_rate}%`} color="text-red-600" />
             <StatCard label="Reported" value={stats.reported_email} sub={`${stats.report_rate}%`} color="text-green-600" />
             <StatCard label="Form Submitted" value={stats.form_submitted} sub={`${stats.submission_rate}%`} color="text-orange-600" />
@@ -144,7 +143,6 @@ const CampaignDetailPage = () => {
             <h2 className="text-sm font-semibold text-slate-700 mb-4">Interaction Breakdown</h2>
             <div className="space-y-3">
               {[
-                { label: 'Email Opened', value: stats.email_opened, rate: stats.open_rate, color: 'bg-blue-500' },
                 { label: 'Link Clicked', value: stats.link_clicked, rate: stats.click_rate, color: 'bg-red-500' },
                 { label: 'Form Submitted', value: stats.form_submitted, rate: stats.submission_rate, color: 'bg-orange-500' },
                 { label: 'Reported', value: stats.reported_email, rate: stats.report_rate, color: 'bg-green-500' },
@@ -198,7 +196,6 @@ const CampaignDetailPage = () => {
                   <tr>
                     <th className="text-left px-4 py-3 font-medium text-slate-600">User</th>
                     <th className="text-left px-4 py-3 font-medium text-slate-600">Department</th>
-                    <th className="text-center px-4 py-3 font-medium text-slate-600">Opened</th>
                     <th className="text-center px-4 py-3 font-medium text-slate-600">Clicked</th>
                     <th className="text-center px-4 py-3 font-medium text-slate-600">Reported</th>
                     <th className="text-center px-4 py-3 font-medium text-slate-600">Submitted</th>
@@ -212,7 +209,6 @@ const CampaignDetailPage = () => {
                         <p className="text-xs text-slate-400">{log.user_id?.email}</p>
                       </td>
                       <td className="px-4 py-3 text-slate-600">{log.user_id?.department}</td>
-                      <td className="text-center px-4 py-3">{log.email_opened ? <Check /> : <Cross />}</td>
                       <td className="text-center px-4 py-3">{log.link_clicked ? <Check color="red" /> : <Cross />}</td>
                       <td className="text-center px-4 py-3">{log.reported_email ? <Check color="green" /> : <Cross />}</td>
                       <td className="text-center px-4 py-3">{log.form_submitted ? <Check color="orange" /> : <Cross />}</td>

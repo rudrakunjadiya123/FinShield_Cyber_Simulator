@@ -42,7 +42,7 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/gamification', require('./routes/gamification'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/audit', require('./routes/audit'));
-app.use('/api/quiz', require('./routes/quiz'));
+
 
 // Root route
 app.get('/', (req, res) => {

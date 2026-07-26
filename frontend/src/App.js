@@ -15,7 +15,6 @@ import ProfilePage from './pages/ProfilePage';
 import EmployeeReportsPage from './pages/EmployeeReportsPage';
 
 import PhishingDrillPage from './pages/PhishingDrillPage';
-import TrainingPage from './pages/TrainingPage';
 import LandingPage from './pages/LandingPage';
 
 const AppRoutes = () => {
@@ -85,14 +84,6 @@ const AppRoutes = () => {
 
 
 
-      <Route
-        path="/training"
-        element={
-          <ProtectedRoute roles={['admin', 'cybersecurity', 'employee']}>
-            <TrainingPage />
-          </ProtectedRoute>
-        }
-      />
 
       <Route
         path="/profile"

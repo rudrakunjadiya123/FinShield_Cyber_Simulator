@@ -44,7 +44,7 @@ router.get('/:id', auth, authorize('admin', 'cybersecurity'), async (req, res) =
 // POST /api/templates/create
 router.post('/create', auth, authorize('admin', 'cybersecurity'), async (req, res) => {
   try {
-    const { template_name, description, phishing_link, html_code, tracked_elements } = req.body;
+    const { template_name, description, phishing_link, html_code, tracked_elements, attack_category } = req.body;
     const orgId = req.user.organization_id;
     const template = await Template.create({
       template_name,
@@ -52,6 +52,7 @@ router.post('/create', auth, authorize('admin', 'cybersecurity'), async (req, re
       phishing_link: phishing_link || '',
       html_code: html_code || '',
       tracked_elements: tracked_elements || [],
+      attack_category: attack_category || 'Email',
       created_by: req.user._id,
       organization_id: orgId
     });
@@ -83,9 +84,6 @@ router.delete('/delete/:id', auth, authorize('admin', 'cybersecurity'), async (r
   try {
     const template = await Template.findOne({ _id: req.params.id, organization_id: req.user.organization_id });
     if (!template) return res.status(404).json({ message: 'Template not found' });
-    if (template.is_predefined) {
-      return res.status(403).json({ message: 'Cannot delete predefined system templates' });
-    }
     await Template.findByIdAndDelete(template._id);
     await logAudit(req.user._id, 'delete', 'template', template._id, `Deleted template: ${template.template_name}`, req.user.organization_id);
     res.json({ message: 'Template deleted successfully' });
