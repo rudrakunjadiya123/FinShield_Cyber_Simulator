@@ -165,6 +165,27 @@ const CampaignDetailPage = () => {
             </div>
           </div>
 
+          {/* Tracked Elements Activity */}
+          {stats.element_stats && Object.keys(stats.element_stats).length > 0 && (
+            <div className="glass-card mb-6 overflow-hidden">
+               <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-amber-50/30">
+                  <h2 className="text-sm font-semibold text-amber-800">🎯 Tracked Elements Activity</h2>
+                  <span className="text-xs text-amber-600 bg-amber-100 px-2 py-1 rounded-full font-medium">Custom Tracking</span>
+               </div>
+               <div className="p-5">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                     {Object.entries(stats.element_stats).map(([elementId, count]) => (
+                        <div key={elementId} className="bg-white border border-slate-100 rounded-lg p-3 text-center shadow-sm">
+                           <p className="text-xs text-slate-500 font-mono mb-1 truncate" title={elementId}>#{elementId}</p>
+                           <p className="text-2xl font-bold text-slate-800">{count}</p>
+                           <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Clicks</p>
+                        </div>
+                     ))}
+                  </div>
+               </div>
+            </div>
+          )}
+
           {/* User Interactions Table */}
           <div className="table-glass overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b">

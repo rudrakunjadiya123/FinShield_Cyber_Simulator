@@ -251,6 +251,16 @@ router.get('/:id/stats', auth, authorize('admin', 'cybersecurity', 'analyst'), a
     const reported = logs.filter(l => l.reported_email).length;
     const submitted = logs.filter(l => l.form_submitted).length;
 
+    const element_stats = {};
+    logs.forEach(log => {
+      if (log.elements_clicked && log.elements_clicked.length > 0) {
+        log.elements_clicked.forEach(el => {
+          if (!element_stats[el.element_id]) element_stats[el.element_id] = 0;
+          element_stats[el.element_id]++;
+        });
+      }
+    });
+
     res.json({
       total_targets: total,
       email_opened: opened,
@@ -261,6 +271,7 @@ router.get('/:id/stats', auth, authorize('admin', 'cybersecurity', 'analyst'), a
       click_rate: total ? ((clicked / total) * 100).toFixed(1) : 0,
       report_rate: total ? ((reported / total) * 100).toFixed(1) : 0,
       submission_rate: total ? ((submitted / total) * 100).toFixed(1) : 0,
+      element_stats,
       logs
     });
   } catch (error) {

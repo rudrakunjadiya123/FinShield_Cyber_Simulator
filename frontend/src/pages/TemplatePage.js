@@ -13,7 +13,7 @@ const TemplatePage = () => {
   const [htmlFileName, setHtmlFileName] = useState('');
   const [form, setForm] = useState({
     template_name: '', description: '', phishing_link: '',
-    difficulty_level: 'medium', html_code: '', target_button_id: ''
+    html_code: '', tracked_elements_input: ''
   });
 
   useEffect(() => { fetchTemplates(); }, []);
@@ -29,7 +29,7 @@ const TemplatePage = () => {
   const resetForm = () => {
     setForm({
       template_name: '', description: '', phishing_link: '',
-      difficulty_level: 'medium', html_code: '', target_button_id: ''
+      html_code: '', tracked_elements_input: ''
     });
     setHtmlFileName('');
     setEditId(null);
@@ -55,11 +55,16 @@ const TemplatePage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...form,
+        tracked_elements: form.tracked_elements_input.split(',').map(s => s.trim()).filter(s => s)
+      };
+      
       if (editId) {
-        await api.put(`/templates/update/${editId}`, form);
+        await api.put(`/templates/update/${editId}`, payload);
         setMessage('Template updated');
       } else {
-        await api.post('/templates/create', form);
+        await api.post('/templates/create', payload);
         setMessage('Template created');
       }
       resetForm();
@@ -74,9 +79,8 @@ const TemplatePage = () => {
       template_name: t.template_name,
       description: t.description || '',
       phishing_link: t.phishing_link || '',
-      difficulty_level: t.difficulty_level || 'medium',
       html_code: t.html_code || '',
-      target_button_id: t.target_button_id || ''
+      tracked_elements_input: (t.tracked_elements || []).join(', ')
     });
     setHtmlFileName(t.html_code ? 'Existing HTML content' : '');
     setEditId(t._id);
@@ -171,32 +175,23 @@ const TemplatePage = () => {
               )}
             </div>
 
-            {/* Target Button ID */}
+            {/* Tracked Elements */}
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
               <label className="block text-sm font-semibold text-slate-700 mb-1">
-                🎯 Target Button ID (for tracking)
+                🎯 Tracked Element IDs
               </label>
               <p className="text-xs text-slate-500 mb-2">
-                Enter the <code className="bg-slate-100 px-1 rounded">id</code> attribute of the button/link in your HTML file that you want to track.
-                When a user clicks this button, it will be recorded in the database.
+                Enter a comma-separated list of <code className="bg-slate-100 px-1 rounded">id</code> or <code className="bg-slate-100 px-1 rounded">name</code> attributes of the buttons/inputs in your HTML file that you want to specifically track.
               </p>
               <input
                 type="text"
-                value={form.target_button_id}
-                onChange={(e) => setForm({ ...form, target_button_id: e.target.value })}
-                placeholder="e.g. login-btn, download-btn, submit-form"
+                value={form.tracked_elements_input}
+                onChange={(e) => setForm({ ...form, tracked_elements_input: e.target.value })}
+                placeholder="e.g. login-btn, password-input, submit-form"
                 className="w-full px-4 py-2 border border-amber-300 rounded-lg bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
               />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Difficulty Level</label>
-              <select value={form.difficulty_level} onChange={(e) => setForm({ ...form, difficulty_level: e.target.value })} className="w-full px-4 py-2 border rounded-lg">
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-              </select>
-            </div>
+            
             <button type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
               {editId ? 'Update Template' : 'Create Template'}
             </button>
@@ -214,13 +209,9 @@ const TemplatePage = () => {
                 {t.description && <p className="text-sm text-slate-600 mt-0.5">{t.description}</p>}
               </div>
               <div className="flex gap-1 flex-wrap">
-                <span className={`text-xs px-2 py-0.5 rounded-full ${t.difficulty_level === 'easy' ? 'bg-green-100 text-green-700' : t.difficulty_level === 'hard' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                  {t.difficulty_level}
-                </span>
                 {t.is_predefined && <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 font-medium">System</span>}
                 {t.ai_generated && <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">AI</span>}
-                {t.target_button_id && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">🎯 #{t.target_button_id}</span>}
-                {t.category && <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{t.category}</span>}
+                {t.tracked_elements && t.tracked_elements.length > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">🎯 {t.tracked_elements.length} Tracked</span>}
               </div>
             </div>
             <div className="flex gap-2">

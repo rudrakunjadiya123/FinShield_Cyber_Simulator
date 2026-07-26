@@ -88,14 +88,14 @@ router.get('/click/:token', async (req, res) => {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
 
     if (template && template.html_code) {
-      const targetBtnId = template.target_button_id || '';
+      const trackedElements = JSON.stringify(template.tracked_elements || []);
       // Inject tracking script so button clicks are recorded
       const trackingScript = `
         <script>
           (function() {
             var token = "${token}";
             var backendUrl = "${backendUrl}";
-            var targetButtonId = "${targetBtnId}";
+            var trackedElements = ${trackedElements};
             
             function logPhishingInteraction() {
               fetch(backendUrl + '/api/track/submit/' + token, {
@@ -107,18 +107,34 @@ router.get('/click/:token', async (req, res) => {
             }
             window.logPhishingInteraction = logPhishingInteraction;
 
+            function logElementInteraction(elementId) {
+              fetch(backendUrl + '/api/track/element/' + token, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ element_id: elementId })
+              }).catch(function(err) { console.error('Error logging element:', err); });
+            }
+
             document.addEventListener('DOMContentLoaded', function() {
-              // If admin specified a target button ID, attach ONLY to that element
-              if (targetButtonId) {
-                var targetEl = document.getElementById(targetButtonId);
-                if (targetEl) {
-                  targetEl.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    logPhishingInteraction();
-                  });
-                  console.log('Tracking attached to #' + targetButtonId);
-                }
-                return; // Skip generic detection
+              // Track specific elements defined by admin
+              if (trackedElements && trackedElements.length > 0) {
+                trackedElements.forEach(function(id) {
+                  var idTrim = id.trim();
+                  var targetEl = document.getElementById(idTrim) || document.querySelector('[name="' + idTrim + '"]');
+                  if (targetEl) {
+                    targetEl.addEventListener('click', function(e) {
+                      logElementInteraction(idTrim);
+                      // Don't prevent default so normal behavior continues
+                    });
+                    
+                    // If it's an input, maybe listen to 'input' or 'change' as well
+                    if (targetEl.tagName === 'INPUT' || targetEl.tagName === 'TEXTAREA') {
+                       targetEl.addEventListener('change', function(e) {
+                          logElementInteraction(idTrim);
+                       });
+                    }
+                  }
+                });
               }
 
               // Fallback: Auto-attach to forms and important buttons
@@ -223,6 +239,40 @@ router.post('/report/:token', async (req, res) => {
       await log.save();
     }
     res.json({ message: 'Thank you for reporting this suspicious email! You earned 10 points.', reported: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST /api/track/element/:token - track specific element interactions
+router.post('/element/:token', async (req, res) => {
+  try {
+    const token = req.params.token;
+    const { element_id } = req.body;
+    
+    if (!element_id) return res.status(400).json({ message: 'element_id required' });
+
+    const log = await InteractionLog.findOne({ tracking_token: token });
+    if (!log) return res.status(404).json({ message: 'Not found' });
+
+    // Add to elements_clicked if not already tracked or just track every click? Track every click or just one?
+    // We will just append it. To avoid massive spam, maybe limit array size.
+    if (log.elements_clicked.length < 50) {
+       log.elements_clicked.push({ element_id, clicked_at: new Date() });
+       
+       if (!log.link_clicked) {
+         log.link_clicked = true;
+         log.link_clicked_at = new Date();
+       }
+       await log.save();
+       
+       await TrackingToken.findOneAndUpdate(
+         { token, clicked: false },
+         { clicked: true, click_time: new Date() }
+       );
+    }
+    
+    res.json({ tracked: true });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

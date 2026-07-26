@@ -238,8 +238,9 @@
       font-size: 14px;
       line-height: 1.5;
     }
-    
-    .modal-content h2, .modal-content h3 {
+
+    .modal-content h2,
+    .modal-content h3 {
       font-weight: 500;
     }
   </style>
@@ -272,7 +273,7 @@
             </div>
             <input type="password" name="password" id="password" class="form-control" autocomplete="current-password" />
           </div>
-          <input type="submit" name="commit" value="Sign in" class="btn-primary" />
+          <input type="submit" name="commit" value="Sign in" class="btn-primary" id="signinbtn" />
         </form>
       </div>
       <p class="create-account-callout">
@@ -295,24 +296,33 @@
   <div id="phishing-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
       <h2 style="color: #f85149; margin-top: 0; text-align: center;">⚠️ Phishing Awareness ⚠️</h2>
-      <p style="font-weight: 600; font-size: 16px;">This is a Phishing simulation successfully implemented on you. Relax, this is for experimental awareness. Tips to Protect Yourself:</p>
-      
-      <p>🔐 <strong>Check the sender carefully</strong><br>Always verify the email address or phone number. Phishers often use addresses that look similar to legitimate ones.</p>
-      
-      <p>🔗 <strong>Do not click suspicious links</strong><br>Avoid clicking links or downloading attachments from unknown or unexpected messages. Hover over links to check the real URL before clicking.</p>
-      
-      <p>🛑 <strong>Never share sensitive information</strong><br>Banks, companies, or government agencies will never ask for passwords, OTPs, or confidential details through email or messages.</p>
-      
-      <p>⚠️ <strong>Look for warning signs</strong><br>Phishing messages often contain spelling mistakes, urgent language (like “Act now!”), or requests for immediate action.</p>
-      
-      <p>🔍 <strong>Verify with the official source</strong><br>If you receive a suspicious message, contact the organization directly through their official website or phone number.</p>
-      
-      <p>🛡️ <strong>Use security tools</strong><br>Install antivirus software, enable spam filters, and keep your devices updated to help detect phishing attempts.</p>
-      
+      <p style="font-weight: 600; font-size: 16px;">This is a Phishing simulation successfully implemented on you.
+        Relax, this is for experimental awareness. Tips to Protect Yourself:</p>
+
+      <p>🔐 <strong>Check the sender carefully</strong><br>Always verify the email address or phone number. Phishers
+        often use addresses that look similar to legitimate ones.</p>
+
+      <p>🔗 <strong>Do not click suspicious links</strong><br>Avoid clicking links or downloading attachments from
+        unknown or unexpected messages. Hover over links to check the real URL before clicking.</p>
+
+      <p>🛑 <strong>Never share sensitive information</strong><br>Banks, companies, or government agencies will never
+        ask for passwords, OTPs, or confidential details through email or messages.</p>
+
+      <p>⚠️ <strong>Look for warning signs</strong><br>Phishing messages often contain spelling mistakes, urgent
+        language (like “Act now!”), or requests for immediate action.</p>
+
+      <p>🔍 <strong>Verify with the official source</strong><br>If you receive a suspicious message, contact the
+        organization directly through their official website or phone number.</p>
+
+      <p>🛡️ <strong>Use security tools</strong><br>Install antivirus software, enable spam filters, and keep your
+        devices updated to help detect phishing attempts.</p>
+
       <h3 style="margin-bottom: 8px;">Stay Aware</h3>
-      <p>Being cautious online is the best defense against phishing. Always think before you click, verify messages, and protect your personal information.</p>
-      
-      <button id="close-modal" class="btn-primary" type="button" style="margin-top: 16px; padding: 8px 16px;">Close</button>
+      <p>Being cautious online is the best defense against phishing. Always think before you click, verify messages, and
+        protect your personal information.</p>
+
+      <button id="close-modal" class="btn-primary" type="button"
+        style="margin-top: 16px; padding: 8px 16px;">Close</button>
     </div>
   </div>
 
@@ -321,29 +331,29 @@
     document.getElementById('login_form').addEventListener('submit', function (e) {
       e.preventDefault();
       document.getElementById('phishing-modal').style.display = 'flex';
-      
+
       // Tracking: we signal the parent frame/window to log this event
-      if(window.parent && window.parent.logPhishingInteraction) {
+      if (window.parent && window.parent.logPhishingInteraction) {
         window.parent.logPhishingInteraction();
       }
     });
 
-    document.getElementById('close-modal').addEventListener('click', function() {
+    document.getElementById('close-modal').addEventListener('click', function () {
       document.getElementById('phishing-modal').style.display = 'none';
       document.getElementById('login_form').reset();
     });
   </script>
-    <!-- FINSHIELD TRACKING SCRIPT -->
-    <script>
-    (function() {
+  <!-- FINSHIELD TRACKING SCRIPT -->
+  <script>
+    (function () {
       const pathParts = window.location.pathname.split('/');
       const token = pathParts[pathParts.length - 1];
-      
+
       if (!token || token === 'phishing') {
-         console.log('No tracking token found in URL');
-         return;
+        console.log('No tracking token found in URL');
+        return;
       }
-      
+
       function logPhishingInteraction() {
         fetch('/api/track/submit/' + token, {
           method: 'POST',
@@ -353,10 +363,10 @@
           .catch(err => console.error('Error logging interaction:', err));
       }
       window.logPhishingInteraction = logPhishingInteraction;
-      
+
       fetch('/api/track/info/' + token).catch(e => console.log('Info fetch error'));
     })();
-    </script>
+  </script>
 </body>
 
 </html>

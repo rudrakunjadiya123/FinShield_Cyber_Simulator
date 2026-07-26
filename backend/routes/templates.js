@@ -44,15 +44,14 @@ router.get('/:id', auth, authorize('admin', 'cybersecurity'), async (req, res) =
 // POST /api/templates/create
 router.post('/create', auth, authorize('admin', 'cybersecurity'), async (req, res) => {
   try {
-    const { template_name, description, phishing_link, difficulty_level, html_code, target_button_id } = req.body;
+    const { template_name, description, phishing_link, html_code, tracked_elements } = req.body;
     const orgId = req.user.organization_id;
     const template = await Template.create({
       template_name,
       description: description || '',
       phishing_link: phishing_link || '',
       html_code: html_code || '',
-      target_button_id: target_button_id || '',
-      difficulty_level: difficulty_level || 'medium',
+      tracked_elements: tracked_elements || [],
       created_by: req.user._id,
       organization_id: orgId
     });

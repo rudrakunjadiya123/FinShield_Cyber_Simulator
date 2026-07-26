@@ -13,6 +13,7 @@ const interactionLogSchema = new mongoose.Schema({
   form_submitted: { type: Boolean, default: false },
   form_submitted_at: { type: Date },
   time_taken: { type: Number, default: 0 },
+  elements_clicked: [{ element_id: String, clicked_at: Date }],
   tracking_token: { type: String, unique: true, required: true }
 }, { timestamps: true });
 
