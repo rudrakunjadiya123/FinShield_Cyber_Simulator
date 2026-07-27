@@ -135,7 +135,7 @@ router.post('/upload', auth, authorize('admin'), upload.single('file'), async (r
         } else {
           await User.create(userData);
           // Send welcome email with generated password
-          sendWelcomeEmail(userData.email, userData.name, userData.password).catch(console.error);
+          await sendWelcomeEmail(userData.email, userData.name, userData.password);
           results.created++;
           newDepts.add(userData.department);
         }
@@ -196,8 +196,8 @@ router.post('/add', auth, authorize('admin'), async (req, res) => {
       organization_id: orgId
     });
 
-    // Send welcome email asynchronously
-    sendWelcomeEmail(email, name, generatedPassword).catch(console.error);
+    // Send welcome email completely before returning response
+    await sendWelcomeEmail(email, name, generatedPassword);
 
     // Add department to org if new
     const org = await Organization.findById(orgId);
