@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  email: { type: String, required: true },
   password: { type: String, required: true },
   department: { type: String, required: true },
   role: {
@@ -13,8 +13,12 @@ const userSchema = new mongoose.Schema({
   },
   organization_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
   points: { type: Number, default: 0 },
-  employee_id: { type: String, unique: true, sparse: true }
+  employee_id: { type: String, sparse: true }
 }, { timestamps: true });
+
+// Compound indexes for organizational scope uniqueness
+userSchema.index({ email: 1, organization_id: 1 }, { unique: true });
+userSchema.index({ employee_id: 1, organization_id: 1 }, { unique: true, sparse: true });
 
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();

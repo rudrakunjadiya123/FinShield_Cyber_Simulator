@@ -118,23 +118,13 @@ router.post('/upload', auth, authorize('admin'), upload.single('file'), async (r
     const newDepts = new Set();
     for (const userData of users) {
       try {
-        const existing = await User.findOne({ email: userData.email });
+        const existing = await User.findOne({ email: userData.email, organization_id: orgId });
         if (existing) {
           // User exists in THIS org - skip
-          if (existing.organization_id.toString() === orgId.toString()) {
-            results.skipped++;
-          } else {
-            // User exists in another org - reassign to this org
-            existing.organization_id = orgId;
-            existing.department = userData.department;
-            existing.name = userData.name;
-            await existing.save();
-            results.updated++;
-            newDepts.add(userData.department);
-          }
+          results.skipped++;
         } else {
           await User.create(userData);
-          // Send welcome email with generated password
+          // Send welcome email completely before returning response
           await sendWelcomeEmail(userData.email, userData.name, userData.password);
           results.created++;
           newDepts.add(userData.department);
@@ -169,13 +159,9 @@ router.post('/add', auth, authorize('admin'), async (req, res) => {
   try {
     const { name, email, department, role, employee_id } = req.body;
     const orgId = req.user.organization_id;
-    const existing = await User.findOne({ email });
+    const existing = await User.findOne({ email, organization_id: orgId });
     if (existing) {
-      if (existing.organization_id.toString() === orgId.toString()) {
-        return res.status(400).json({ message: 'User already exists in your organization' });
-      } else {
-        return res.status(400).json({ message: 'Email is already registered in the system' });
-      }
+      return res.status(400).json({ message: 'User already exists in your organization' });
     }
     
     if (employee_id) {

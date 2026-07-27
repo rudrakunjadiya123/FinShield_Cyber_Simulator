@@ -158,11 +158,37 @@ router.post('/register', async (req, res) => {
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email }).populate('organization_id', 'name code');
-    if (!user) {
+    const { email, password, orgCode } = req.body;
+    
+    // Check how many organizations this email belongs to
+    const usersWithEmail = await User.find({ email }).populate('organization_id', 'name code');
+    
+    if (usersWithEmail.length === 0) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+
+    let user = null;
+
+    if (usersWithEmail.length === 1) {
+      // Only belongs to 1 org, easy
+      user = usersWithEmail[0];
+    } else {
+      // Belongs to multiple orgs
+      if (!orgCode) {
+        return res.status(400).json({ 
+          message: 'This email is registered in multiple organizations. Please provide your Organization Code.',
+          requireOrgCode: true 
+        });
+      }
+      // They provided an orgCode, find the matching user
+      user = usersWithEmail.find(u => 
+        u.organization_id && u.organization_id.code.toUpperCase() === orgCode.toUpperCase()
+      );
+      if (!user) {
+         return res.status(401).json({ message: 'Invalid Organization Code for this email.' });
+      }
+    }
+
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -180,7 +206,6 @@ router.post('/login', async (req, res) => {
         organization_name: user.organization_id?.name,
         organization_code: user.organization_id?.code,
         points: user.points,
-
       }
     });
   } catch (error) {

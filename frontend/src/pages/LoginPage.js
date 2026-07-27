@@ -6,6 +6,8 @@ import { Shield, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-rea
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [orgCode, setOrgCode] = useState('');
+  const [showOrgCodeField, setShowOrgCodeField] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -17,10 +19,15 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email, password, orgCode);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      if (err.response?.data?.requireOrgCode) {
+        setShowOrgCodeField(true);
+        setError(err.response.data.message);
+      } else {
+        setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
@@ -83,6 +90,29 @@ const LoginPage = () => {
                 />
               </div>
             </div>
+
+            {showOrgCodeField && (
+              <div className="animate-fade-in-up">
+                <label className="block text-sm font-medium text-slate-300 mb-1.5 flex justify-between">
+                  <span>Organization Code</span>
+                  <span className="text-xs text-cyan-400 font-normal">Required for shared emails</span>
+                </label>
+                <div className="relative">
+                  <Shield className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-500" />
+                  <input
+                    type="text"
+                    value={orgCode}
+                    onChange={(e) => setOrgCode(e.target.value.toUpperCase())}
+                    className="w-full pl-11 pr-4 py-3 rounded-xl text-sm text-white placeholder-slate-500 transition-all outline-none"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                    onFocus={(e) => { e.target.style.borderColor = 'rgba(8,145,178,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(8,145,178,0.1)'; }}
+                    onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.boxShadow = 'none'; }}
+                    placeholder="Enter your Org Code"
+                    required={showOrgCodeField}
+                  />
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
