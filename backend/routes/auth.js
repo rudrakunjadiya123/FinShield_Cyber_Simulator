@@ -23,9 +23,10 @@ router.post('/register', async (req, res) => {
         return res.status(400).json({ message: 'Organization name is required' });
       }
 
-      const existing = await User.findOne({ email });
+      // For creating a new organization, check if they are already an admin of another org with this email
+      const existing = await User.findOne({ email, role: 'admin' });
       if (existing) {
-        return res.status(400).json({ message: 'User with this email already exists' });
+        return res.status(400).json({ message: 'You are already an admin of a registered organization with this email.' });
       }
 
       organization = await Organization.create({
@@ -111,9 +112,10 @@ router.post('/register', async (req, res) => {
 
       } else {
         // NON-EMPLOYEE (cybersecurity, analyst, admin) can join directly
-        const existing = await User.findOne({ email });
+        // NON-EMPLOYEE (cybersecurity, analyst, admin) can join directly
+        const existing = await User.findOne({ email, organization_id: organization._id });
         if (existing) {
-          return res.status(400).json({ message: 'User with this email already exists' });
+          return res.status(400).json({ message: 'User with this email already exists in this organization' });
         }
 
         if (department && !organization.departments.includes(department)) {
