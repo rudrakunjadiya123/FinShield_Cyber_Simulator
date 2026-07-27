@@ -5,8 +5,8 @@ const TrackingToken = require('../models/TrackingToken');
 const createTransporter = () => {
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT),
-    secure: false,
+    port: parseInt(process.env.SMTP_PORT) || 587,
+    secure: parseInt(process.env.SMTP_PORT) === 465, // true for 465, false for other ports
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS
@@ -60,6 +60,7 @@ const sendPhishingEmail = async (campaign, user, template, trackingToken, organi
 
     return { success: true, messageId: info.messageId };
   } catch (error) {
+    console.error('SMTP Error in sendPhishingEmail:', error);
     deliveryLog.email_status = 'failed';
     deliveryLog.smtp_response = error.message;
     await deliveryLog.save();
