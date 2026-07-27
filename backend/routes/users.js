@@ -165,8 +165,8 @@ router.post('/add', auth, authorize('admin'), async (req, res) => {
     }
     
     if (employee_id) {
-       const idExists = await User.findOne({ employee_id });
-       if (idExists) return res.status(400).json({ message: 'Employee ID is already in use' });
+       const idExists = await User.findOne({ employee_id, organization_id: orgId });
+       if (idExists) return res.status(400).json({ message: 'Employee ID is already in use in your organization' });
     }
     
     const assignedRole = role || 'employee';
@@ -208,15 +208,15 @@ router.put('/update/:id', auth, authorize('admin'), async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
     if (user.role === 'admin') return res.status(403).json({ message: 'Cannot edit admin users' });
 
-    // Check if email is being changed to one that already exists
+    // Check if email is being changed to one that already exists in this org
     if (email && email !== user.email) {
-      const emailExists = await User.findOne({ email });
-      if (emailExists) return res.status(400).json({ message: 'Email already in use' });
+      const emailExists = await User.findOne({ email, organization_id: orgId });
+      if (emailExists) return res.status(400).json({ message: 'Email already in use in your organization' });
     }
     
     if (employee_id && employee_id !== user.employee_id) {
-       const idExists = await User.findOne({ employee_id });
-       if (idExists) return res.status(400).json({ message: 'Employee ID already in use' });
+       const idExists = await User.findOne({ employee_id, organization_id: orgId });
+       if (idExists) return res.status(400).json({ message: 'Employee ID already in use in your organization' });
     }
 
     if (name) user.name = name;
